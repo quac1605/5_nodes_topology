@@ -1,0 +1,9 @@
+{
+  "node_name": "$container",
+  "bind": "0.0.0.0:7946",
+  "advertise": "$ip_address:7946",
+  "memberlist_config": {
+    "gossip_interval": "20s"
+  }
+}
+

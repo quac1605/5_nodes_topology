@@ -1,0 +1,45 @@
+! Startup-config last modified at Sat Dec 14 12:46:05 2024 by root
+! device: central_switch (cEOSLab, EOS-4.28.8.1M-32999662.42881M (engineering build))
+!
+no aaa root
+!
+username admin privilege 15 role network-admin secret sha512 $6$PEqp4Z0rBZgp4Ef/$3aCNwDQgiB6nks.UbEAEI/kmNz0qgurS5p0cuP1sXqLzIu5UDWBELaZPCp3AFFlTt17yd7rTwCZEljexva1v41
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname central_switch
+!
+spanning-tree mode mstp
+!
+management api http-commands
+   no shutdown
+!
+management api gnmi
+   transport grpc default
+!
+management api netconf
+   transport ssh default
+!
+interface Ethernet1
+!
+interface Ethernet2
+!
+interface Ethernet3
+!
+interface Ethernet4
+!
+interface Ethernet5
+!
+interface Management0
+   ip address 172.20.20.5/24
+   ipv6 address 3fff:172:20:20::5/64
+!
+no ip routing
+!
+ip route 0.0.0.0/0 172.20.20.1
+!
+ipv6 route ::/0 3fff:172:20:20::1
+!
+end
