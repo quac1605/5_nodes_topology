@@ -38,7 +38,8 @@ setup_ubuntu_nodes() {
 {
   "node_name": "$container",
   "bind": "0.0.0.0:7946",
-  "advertise": "$ip_address:7946"
+  "advertise": "$ip_address:7946",
+  "rpc_addr": "0.0.0.0:7373",
 }
 EOF
 )
