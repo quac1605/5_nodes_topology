@@ -1,5 +1,5 @@
-! Startup-config last modified at Sat Jan  4 18:07:27 2025 by root
-! device: central-switch (cEOSLab, EOS-4.28.8.1M-32999662.42881M (engineering build))
+! Startup-config last modified at Mon Jan  6 12:47:23 2025 by root
+! device: central_switch (cEOSLab, EOS-4.28.8.1M-32999662.42881M (engineering build))
 !
 no aaa root
 !
