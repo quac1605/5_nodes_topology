@@ -9,18 +9,28 @@ topology:
     serf1:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
+      memory: 512mb
+      cpu: 1
     serf2:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
+      memory: 512mb
+      cpu: 1.5
     serf3:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
+      memory: 1024mb
+      cpu: 1.3
     serf4:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
+      memory: 2048mb
+      cpu: 2
     serf5:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
+      memory: 1.5gb
+      cpu: 1.7
     
   links:
     # Central switch to serf nodes

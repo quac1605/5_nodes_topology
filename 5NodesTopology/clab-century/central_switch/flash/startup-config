@@ -1,9 +1,9 @@
-! Startup-config last modified at Mon Jan  6 12:47:23 2025 by root
+! Startup-config last modified at Wed Jan  8 22:35:15 2025 by root
 ! device: central_switch (cEOSLab, EOS-4.28.8.1M-32999662.42881M (engineering build))
 !
 no aaa root
 !
-username admin privilege 15 role network-admin secret sha512 $6$PEqp4Z0rBZgp4Ef/$3aCNwDQgiB6nks.UbEAEI/kmNz0qgurS5p0cuP1sXqLzIu5UDWBELaZPCp3AFFlTt17yd7rTwCZEljexva1v41
+username admin privilege 15 role network-admin secret sha512 $6$nhYz43.0tkjrvgkV$3Y9oCaKSmgBaLeo/6ee2N/cHLX.rkALWXvfTMzMZ/0wQi7Pn7loY5U.Dvm0HNCjov8M3ImS1u4KqmeXIzbJEm.
 !
 transceiver qsfp default-mode 4x10G
 !

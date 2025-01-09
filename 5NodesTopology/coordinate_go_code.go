@@ -12,13 +12,21 @@ import (
 )
 
 func main() {
-	// Set up logging to a file
-	logFile, err := os.OpenFile("rtt_estimates.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// Set up logging to a file for RTT estimates
+	rttLogFile, err := os.OpenFile("rtt_estimates.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatalf("Failed to open log file: %v", err)
+		log.Fatalf("Failed to open RTT log file: %v", err)
 	}
-	defer logFile.Close()
-	logger := log.New(logFile, "", log.LstdFlags)
+	defer rttLogFile.Close()
+	rttLogger := log.New(rttLogFile, "", log.LstdFlags)
+
+	// Set up logging to a file for coordinates
+	coordLogFile, err := os.OpenFile("coordinate.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("Failed to open coordinate log file: %v", err)
+	}
+	defer coordLogFile.Close()
+	coordLogger := log.New(coordLogFile, "", log.LstdFlags)
 
 	// Set up the Serf RPC client configuration
 	clientConfig := &client.Config{
@@ -50,6 +58,9 @@ func main() {
 			} else {
 				fmt.Printf("Vivaldi Coordinate for %s: %+v\n", member.Name, coord)
 
+				// Log the coordinate to the coordinate log file with timestamp
+				coordLogger.Printf("Time: %s - Coordinate for %s: %+v\n", time.Now().Format(time.RFC3339), member.Name, coord)
+
 				// Calculate RTT from coordinates to this node
 				for _, otherMember := range clientMembers {
 					if member.Name != otherMember.Name {
@@ -60,8 +71,8 @@ func main() {
 							rtt := calculateRTT(coord, otherCoord)
 							fmt.Printf("Estimated RTT from %s to %s: %.2f ms\n", member.Name, otherMember.Name, rtt)
 
-							// Log the RTT to the file with timestamp
-							logger.Printf("Time: %s - Estimated RTT from %s to %s: %.2f ms\n", time.Now().Format(time.RFC3339), member.Name, otherMember.Name, rtt)
+							// Log the RTT to the RTT log file with timestamp
+							rttLogger.Printf("Time: %s - Estimated RTT from %s to %s: %.2f ms\n", time.Now().Format(time.RFC3339), member.Name, otherMember.Name, rtt)
 						}
 					}
 				}
