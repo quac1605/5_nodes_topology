@@ -6,7 +6,7 @@
       "prefix": "clab",
       "mgmt": {
         "network": "clab",
-        "bridge": "br-474c39ce7605",
+        "bridge": "br-9c715ed03c4e",
         "ipv4-subnet": "172.20.20.0/24",
         "ipv4-gw": "172.20.20.1",
         "ipv6-subnet": "3fff:172:20:20::/64",
@@ -28,13 +28,13 @@
       "image": "testing954/ceos:4.28.0F",
       "mgmt-net": "",
       "mgmt-intf": "Management0",
-      "mgmt-ipv4-address": "172.20.20.4",
+      "mgmt-ipv4-address": "172.20.20.7",
       "mgmt-ipv4-prefix-length": 24,
-      "mgmt-ipv6-address": "3fff:172:20:20::4",
+      "mgmt-ipv6-address": "3fff:172:20:20::7",
       "mgmt-ipv6-prefix-length": 64,
-      "mac-address": "00:1c:73:22:a8:e0",
+      "mac-address": "00:1c:73:ca:60:8e",
       "labels": {
-        "clab-mgmt-net-bridge": "br-474c39ce7605",
+        "clab-mgmt-net-bridge": "br-9c715ed03c4e",
         "clab-node-group": "",
         "clab-node-kind": "ceos",
         "clab-node-lab-dir": "/home/nnquang/lab/5_nodes_topology/5NodesTopology/clab-century/central_switch",
@@ -58,13 +58,13 @@
       "image": "anjummalik/ubuntu-with-serf-compatability",
       "mgmt-net": "",
       "mgmt-intf": "",
-      "mgmt-ipv4-address": "172.20.20.7",
+      "mgmt-ipv4-address": "172.20.20.3",
       "mgmt-ipv4-prefix-length": 24,
-      "mgmt-ipv6-address": "3fff:172:20:20::7",
+      "mgmt-ipv6-address": "3fff:172:20:20::3",
       "mgmt-ipv6-prefix-length": 64,
       "mac-address": "",
       "labels": {
-        "clab-mgmt-net-bridge": "br-474c39ce7605",
+        "clab-mgmt-net-bridge": "br-9c715ed03c4e",
         "clab-node-group": "",
         "clab-node-kind": "linux",
         "clab-node-lab-dir": "/home/nnquang/lab/5_nodes_topology/5NodesTopology/clab-century/serf1",
@@ -94,7 +94,7 @@
       "mgmt-ipv6-prefix-length": 64,
       "mac-address": "",
       "labels": {
-        "clab-mgmt-net-bridge": "br-474c39ce7605",
+        "clab-mgmt-net-bridge": "br-9c715ed03c4e",
         "clab-node-group": "",
         "clab-node-kind": "linux",
         "clab-node-lab-dir": "/home/nnquang/lab/5_nodes_topology/5NodesTopology/clab-century/serf2",
@@ -124,7 +124,7 @@
       "mgmt-ipv6-prefix-length": 64,
       "mac-address": "",
       "labels": {
-        "clab-mgmt-net-bridge": "br-474c39ce7605",
+        "clab-mgmt-net-bridge": "br-9c715ed03c4e",
         "clab-node-group": "",
         "clab-node-kind": "linux",
         "clab-node-lab-dir": "/home/nnquang/lab/5_nodes_topology/5NodesTopology/clab-century/serf3",
@@ -148,13 +148,13 @@
       "image": "anjummalik/ubuntu-with-serf-compatability",
       "mgmt-net": "",
       "mgmt-intf": "",
-      "mgmt-ipv4-address": "172.20.20.6",
+      "mgmt-ipv4-address": "172.20.20.4",
       "mgmt-ipv4-prefix-length": 24,
-      "mgmt-ipv6-address": "3fff:172:20:20::6",
+      "mgmt-ipv6-address": "3fff:172:20:20::4",
       "mgmt-ipv6-prefix-length": 64,
       "mac-address": "",
       "labels": {
-        "clab-mgmt-net-bridge": "br-474c39ce7605",
+        "clab-mgmt-net-bridge": "br-9c715ed03c4e",
         "clab-node-group": "",
         "clab-node-kind": "linux",
         "clab-node-lab-dir": "/home/nnquang/lab/5_nodes_topology/5NodesTopology/clab-century/serf4",
@@ -178,13 +178,13 @@
       "image": "anjummalik/ubuntu-with-serf-compatability",
       "mgmt-net": "",
       "mgmt-intf": "",
-      "mgmt-ipv4-address": "172.20.20.3",
+      "mgmt-ipv4-address": "172.20.20.6",
       "mgmt-ipv4-prefix-length": 24,
-      "mgmt-ipv6-address": "3fff:172:20:20::3",
+      "mgmt-ipv6-address": "3fff:172:20:20::6",
       "mgmt-ipv6-prefix-length": 64,
       "mac-address": "",
       "labels": {
-        "clab-mgmt-net-bridge": "br-474c39ce7605",
+        "clab-mgmt-net-bridge": "br-9c715ed03c4e",
         "clab-node-group": "",
         "clab-node-kind": "linux",
         "clab-node-lab-dir": "/home/nnquang/lab/5_nodes_topology/5NodesTopology/clab-century/serf5",
@@ -203,13 +203,13 @@
       "a": {
         "node": "central_switch",
         "interface": "eth1",
-        "mac": "aa:c1:ab:a6:bb:e5",
+        "mac": "aa:c1:ab:02:eb:b9",
         "peer": "z"
       },
       "z": {
         "node": "serf1",
         "interface": "eth1",
-        "mac": "aa:c1:ab:e9:42:a3",
+        "mac": "aa:c1:ab:da:f1:86",
         "peer": "a"
       }
     },
@@ -217,13 +217,13 @@
       "a": {
         "node": "central_switch",
         "interface": "eth2",
-        "mac": "aa:c1:ab:89:be:7f",
+        "mac": "aa:c1:ab:56:71:95",
         "peer": "z"
       },
       "z": {
         "node": "serf2",
         "interface": "eth1",
-        "mac": "aa:c1:ab:78:2e:ed",
+        "mac": "aa:c1:ab:42:8a:3d",
         "peer": "a"
       }
     },
@@ -231,13 +231,13 @@
       "a": {
         "node": "central_switch",
         "interface": "eth3",
-        "mac": "aa:c1:ab:d0:30:76",
+        "mac": "aa:c1:ab:bc:c4:c2",
         "peer": "z"
       },
       "z": {
         "node": "serf3",
         "interface": "eth1",
-        "mac": "aa:c1:ab:54:f6:3b",
+        "mac": "aa:c1:ab:4c:3f:96",
         "peer": "a"
       }
     },
@@ -245,13 +245,13 @@
       "a": {
         "node": "central_switch",
         "interface": "eth4",
-        "mac": "aa:c1:ab:bf:ac:5d",
+        "mac": "aa:c1:ab:26:e5:b6",
         "peer": "z"
       },
       "z": {
         "node": "serf4",
         "interface": "eth1",
-        "mac": "aa:c1:ab:fc:f8:eb",
+        "mac": "aa:c1:ab:2f:c3:26",
         "peer": "a"
       }
     },
@@ -259,13 +259,13 @@
       "a": {
         "node": "central_switch",
         "interface": "eth5",
-        "mac": "aa:c1:ab:51:72:22",
+        "mac": "aa:c1:ab:6a:43:31",
         "peer": "z"
       },
       "z": {
         "node": "serf5",
         "interface": "eth1",
-        "mac": "aa:c1:ab:4c:86:ff",
+        "mac": "aa:c1:ab:71:2f:7b",
         "peer": "a"
       }
     }

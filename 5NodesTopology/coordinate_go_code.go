@@ -50,7 +50,7 @@ func main() {
 		for _, member := range clientMembers {
 			fmt.Printf("Node: %s, Address: %s:%d, Status: %s, Tags: %v\n",
 				member.Name, member.Addr, member.Port, member.Status, member.Tags)
-
+			fmt.Println(member)
 			// Fetch the network coordinate for the member
 			coord, err := serfClient.GetCoordinate(member.Name)
 			if err != nil {

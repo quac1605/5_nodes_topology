@@ -5,17 +5,15 @@ import (
 	"log"
 	"math"
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/google/hilbert" // Import Hilbert library
 	"github.com/hashicorp/serf/client"
 	"github.com/hashicorp/serf/coordinate"
 )
 
 func main() {
 	// Set up logging to a file
-	logFile, err := os.OpenFile("hilbert_indices.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile("node_coordinates_with_hilbert.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Failed to open log file: %v", err)
 	}
@@ -40,6 +38,7 @@ func main() {
 		}
 
 		for _, member := range clientMembers {
+			// Print node information
 			fmt.Printf("Node: %s, Address: %s:%d, Status: %s, Tags: %v\n",
 				member.Name, member.Addr, member.Port, member.Status, member.Tags)
 
@@ -50,47 +49,52 @@ func main() {
 				continue
 			}
 
-			// Retrieve CPU and memory resources from tags (example assumption)
-			cpu := parseFloat(member.Tags["cpu"], 0)
-			memory := parseFloat(member.Tags["memory"], 0)
+			// Calculate Hilbert index using only coordinates
+			hilbertIndex := calculateHilbertIndex(coord)
 
-			// Normalize values and calculate Hilbert index
-			hilbertIndex := calculateHilbertIndex(coord, cpu, memory)
-			fmt.Printf("Hilbert Index for %s: %d\n", member.Name, hilbertIndex)
+			// Prepare the output string
+			nodeInfo := fmt.Sprintf(
+				"Node: %s\n\tCoordinate: %+v\n\tHilbert Index: %d\n",
+				member.Name, coord, hilbertIndex,
+			)
 
-			// Log Hilbert index
-			logger.Printf("Time: %s - Hilbert Index for %s: %d\n",
-				time.Now().Format(time.RFC3339), member.Name, hilbertIndex)
+			// Print to console
+			fmt.Print(nodeInfo)
+
+			// Log to file
+			logger.Printf(nodeInfo)
 		}
 
+		// Wait for a specified duration before the next iteration
 		time.Sleep(10 * time.Second)
 	}
 }
 
-// calculateHilbertIndex calculates the 4D Hilbert index for a node
-func calculateHilbertIndex(coord *coordinate.Coordinate, cpu, memory float64) uint64 {
-	// Define scaling factors (these can be adjusted based on the dataset)
+// calculateHilbertIndex calculates the Hilbert index for a node based on its coordinates
+func calculateHilbertIndex(coord *coordinate.Coordinate) uint64 {
+	// Define scaling factors
 	scaleFactor := 1000.0
-	cpuMax := 4.0       // Assume max CPU is 4 cores
-	memoryMax := 8192.0 // Assume max memory is 8GB
 
 	// Normalize values
 	x := int(math.Round(coord.Vec[0] * scaleFactor))
 	y := int(math.Round(coord.Vec[1] * scaleFactor))
-	z := int(math.Round((cpu / cpuMax) * scaleFactor))
-	w := int(math.Round((memory / memoryMax) * scaleFactor))
 
-	// Calculate Hilbert index
+	// Calculate Hilbert index (2D)
 	hilbertOrder := 10 // Number of bits per dimension
-	index, _ := hilbert.Encode(hilbertOrder, []int{x, y, z, w})
-
-	return index
+	return hilbertIndex2D(hilbertOrder, x, y)
 }
 
-// parseFloat safely parses a string to float, returns default value on failure
-func parseFloat(s string, defaultValue float64) float64 {
-	if val, err := strconv.ParseFloat(s, 64); err == nil {
-		return val
+// hilbertIndex2D encodes 2D coordinates into a Hilbert curve index
+func hilbertIndex2D(order, x, y int) uint64 {
+	var index uint64
+
+	for s := order - 1; s >= 0; s-- {
+		mask := 1 << s
+		rx := (x & mask) >> s
+		ry := (y & mask) >> s
+
+		// Combine the bits into a Hilbert index
+		index = (index << 2) | (uint64(rx)<<1 | uint64(ry))
 	}
-	return defaultValue
+	return index
 }
