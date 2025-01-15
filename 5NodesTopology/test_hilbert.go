@@ -1,19 +1,25 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
-	"math"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/serf/client"
-	"github.com/hashicorp/serf/coordinate"
 )
+
+type NodeResources struct {
+	RemainingCPU    float64
+	RemainingMemory float64 // Store memory in MiB for uniformity
+}
 
 func main() {
 	// Set up logging to a file
-	logFile, err := os.OpenFile("node_coordinates_with_hilbert.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile("node_data.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Failed to open log file: %v", err)
 	}
@@ -32,37 +38,47 @@ func main() {
 	defer serfClient.Close()
 
 	for {
+		// Load node resources from the file
+		nodeResources, err := loadNodeResources("container_stats.txt")
+		if err != nil {
+			log.Fatalf("Failed to load node resources: %v", err)
+		}
 		clientMembers, err := serfClient.Members()
 		if err != nil {
 			log.Fatalf("Failed to retrieve members: %v", err)
 		}
 
 		for _, member := range clientMembers {
-			// Print node information
-			fmt.Printf("Node: %s, Address: %s:%d, Status: %s, Tags: %v\n",
+			// Print basic node information
+			fmt.Printf("Node Name: %s\n\tAddress: %s:%d\n\tStatus: %s\n\tTags: %v\n",
 				member.Name, member.Addr, member.Port, member.Status, member.Tags)
 
 			// Fetch the network coordinate for the member
 			coord, err := serfClient.GetCoordinate(member.Name)
 			if err != nil {
-				fmt.Printf("Failed to get coordinate for node %s: %v\n", member.Name, err)
+				fmt.Printf("\tFailed to get coordinate for node %s: %v\n", member.Name, err)
 				continue
 			}
 
-			// Calculate Hilbert index using only coordinates
-			hilbertIndex := calculateHilbertIndex(coord)
+			// Get the node's resource data
+			resources, exists := nodeResources[member.Name]
+			if !exists {
+				fmt.Printf("\tResource data not found for node %s\n", member.Name)
+				continue
+			}
 
 			// Prepare the output string
 			nodeInfo := fmt.Sprintf(
-				"Node: %s\n\tCoordinate: %+v\n\tHilbert Index: %d\n",
-				member.Name, coord, hilbertIndex,
+				"\tCoordinate: %+v\n\tRemaining CPU: %.2f%%\n\tRemaining Memory: %.2f MiB\n",
+				coord, resources.RemainingCPU, resources.RemainingMemory,
 			)
 
 			// Print to console
 			fmt.Print(nodeInfo)
 
-			// Log to file
-			logger.Printf(nodeInfo)
+			// Log the full data to file
+			logger.Printf("Node Name: %s\nAddress: %s:%d\nStatus: %s\nTags: %v\nCoordinate: %+v\nRemaining CPU: %.2f%%\nRemaining Memory: %.2f MiB\n",
+				member.Name, member.Addr, member.Port, member.Status, member.Tags, coord, resources.RemainingCPU, resources.RemainingMemory)
 		}
 
 		// Wait for a specified duration before the next iteration
@@ -70,31 +86,66 @@ func main() {
 	}
 }
 
-// calculateHilbertIndex calculates the Hilbert index for a node based on its coordinates
-func calculateHilbertIndex(coord *coordinate.Coordinate) uint64 {
-	// Define scaling factors
-	scaleFactor := 1000.0
-
-	// Normalize values
-	x := int(math.Round(coord.Vec[0] * scaleFactor))
-	y := int(math.Round(coord.Vec[1] * scaleFactor))
-
-	// Calculate Hilbert index (2D)
-	hilbertOrder := 10 // Number of bits per dimension
-	return hilbertIndex2D(hilbertOrder, x, y)
-}
-
-// hilbertIndex2D encodes 2D coordinates into a Hilbert curve index
-func hilbertIndex2D(order, x, y int) uint64 {
-	var index uint64
-
-	for s := order - 1; s >= 0; s-- {
-		mask := 1 << s
-		rx := (x & mask) >> s
-		ry := (y & mask) >> s
-
-		// Combine the bits into a Hilbert index
-		index = (index << 2) | (uint64(rx)<<1 | uint64(ry))
+// loadNodeResources reads the resource data from the given file and returns a map of NodeResources
+func loadNodeResources(filePath string) (map[string]NodeResources, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
 	}
-	return index
+	defer file.Close()
+
+	resources := make(map[string]NodeResources)
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Split(line, ", ")
+		if len(parts) != 3 {
+			continue // Skip lines that don't match the expected format
+		}
+
+		// Parse node name
+		nameParts := strings.Split(parts[0], ": ")
+		if len(nameParts) != 2 {
+			continue
+		}
+		nodeName := strings.TrimSpace(nameParts[1])
+
+		// Parse remaining CPU
+		cpuParts := strings.Split(parts[1], ": ")
+		if len(cpuParts) != 2 {
+			continue
+		}
+		remainingCPU, err := strconv.ParseFloat(strings.TrimSuffix(strings.TrimSpace(cpuParts[1]), "%"), 64)
+		if err != nil {
+			continue
+		}
+
+		// Parse remaining memory
+		memoryParts := strings.Split(parts[2], ": ")
+		if len(memoryParts) != 2 {
+			continue
+		}
+		memoryStr := strings.TrimSuffix(strings.TrimSpace(memoryParts[1]), " MiB")
+		memoryStr = strings.TrimSuffix(memoryStr, " GiB") // Handle both MiB and GiB
+		remainingMemory, err := strconv.ParseFloat(memoryStr, 64)
+		if err != nil {
+			continue
+		}
+		if strings.Contains(memoryParts[1], "GiB") {
+			remainingMemory *= 1024 // Convert GiB to MiB
+		}
+
+		// Add to the map
+		resources[nodeName] = NodeResources{
+			RemainingCPU:    remainingCPU,
+			RemainingMemory: remainingMemory,
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return resources, nil
 }
