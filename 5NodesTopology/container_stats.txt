@@ -1,6 +1,6 @@
-Name: clab-century-central_switch, Remaining CPU: 96.63%, Remaining Memory: 6235.14 GiB
-Name: clab-century-serf2, Remaining CPU: 99.98%, Remaining Memory: 478.03 MiB
-Name: clab-century-serf5, Remaining CPU: 99.95%, Remaining Memory: 1418.57 MiB
-Name: clab-century-serf3, Remaining CPU: 99.96%, Remaining Memory: 962.98 MiB
-Name: clab-century-serf1, Remaining CPU: 99.96%, Remaining Memory: 471.42 MiB
-Name: clab-century-serf4, Remaining CPU: 99.80%, Remaining Memory: 1938.60 MiB
+Name: clab-century-serf1, Remaining CPU: 99.98%, Remaining Memory: 463.48 MiB
+Name: clab-century-central_switch, Remaining CPU: 99.46%, Remaining Memory: 6195.20 GiB
+Name: clab-century-serf3, Remaining CPU: 99.99%, Remaining Memory: 954.71 MiB
+Name: clab-century-serf2, Remaining CPU: 99.98%, Remaining Memory: 468.02 MiB
+Name: clab-century-serf5, Remaining CPU: 99.98%, Remaining Memory: 1409.97 MiB
+Name: clab-century-serf4, Remaining CPU: 99.99%, Remaining Memory: 1930.72 MiB

@@ -69,16 +69,16 @@ func main() {
 
 			// Prepare the output string
 			nodeInfo := fmt.Sprintf(
-				"\tCoordinate: %+v\n\tRemaining CPU: %.2f%%\n\tRemaining Memory: %.2f MiB\n",
-				coord, resources.RemainingCPU, resources.RemainingMemory,
+				"\tCoordinate x: %+v\n\t\tCoordinate y: %+v\n\tRemaining CPU: %.2f%%\n\tRemaining Memory: %.2f MiB\n",
+				coord.Vec[0], coord.Vec[1], resources.RemainingCPU, resources.RemainingMemory,
 			)
 
 			// Print to console
 			fmt.Print(nodeInfo)
 
 			// Log the full data to file
-			logger.Printf("Node Name: %s\nAddress: %s:%d\nStatus: %s\nTags: %v\nCoordinate: %+v\nRemaining CPU: %.2f%%\nRemaining Memory: %.2f MiB\n",
-				member.Name, member.Addr, member.Port, member.Status, member.Tags, coord, resources.RemainingCPU, resources.RemainingMemory)
+			logger.Printf("Node Name: %s\nAddress: %s:%d\nStatus: %s\nTags: %v\nCoordinate x: %+v\nCoordinate y: %+v\nRemaining CPU: %.2f%%\nRemaining Memory: %.2f MiB\n",
+				member.Name, member.Addr, member.Port, member.Status, member.Tags, coord.Vec[0], coord.Vec[1], resources.RemainingCPU, resources.RemainingMemory)
 		}
 
 		// Wait for a specified duration before the next iteration
