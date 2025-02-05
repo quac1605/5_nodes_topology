@@ -9,29 +9,33 @@ topology:
     serf1:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      memory: 512mb
-      cpu: 1
+      # memory: 512mb
+      # cpu: 1
+      # startup-delay: 0.05
     serf2:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      memory: 512mb
-      cpu: 1.5
+      # memory: 512mb
+      # cpu: 1.5
+      # startup-delay: 0.05
     serf3:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      memory: 1024mb
-      cpu: 1.3
+      # memory: 1024mb
+      # cpu: 1.3
+      # startup-delay: 0.05
     serf4:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      memory: 2048mb
-      cpu: 2
+      # memory: 2048mb
+      # cpu: 2
+      # startup-delay: 0.1
     serf5:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      memory: 1.5gb
-      cpu: 1.7
-    
+      # memory: 1.5gb
+      # cpu: 1.7
+      # startup-delay: 0.1    
   links:
     # Central switch to serf nodes
     - endpoints: ["central_switch:eth1", "serf1:eth1"]

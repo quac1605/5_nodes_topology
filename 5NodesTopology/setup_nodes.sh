@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# List of containers (Ubuntu nodes for 100 nodes)
+# List of containers (Ubuntu nodes for 5 nodes)
 containers=()
 for i in {1..5}; do
   containers+=(clab-century-serf$i)
@@ -8,7 +8,7 @@ done
 
 # Paths and file names
 json_file="node.json"
-binary_file="serf"  # Use the full path to the serf binary
+binary_file="serf"  # Use the full path to the serf binary if needed
 destination_dir="/opt/serfapp"
 
 # Function to set up Ubuntu nodes
@@ -62,9 +62,20 @@ EOF
     rm "$temp_json_file"
 
     echo "$container setup complete."
+
+    # Determine the node number (array is 0-indexed so add 1)
+    node_num=$((i + 1))
+    # Set the netem delay based on node number
+    if [ "$node_num" -le 3 ]; then
+      echo "Setting netem delay for $container to 50ms..."
+      containerlab tools netem set -n "$container" -i eth1 --delay 50ms
+    else
+      echo "Setting netem delay for $container to 100ms..."
+      containerlab tools netem set -n "$container" -i eth1 --delay 100ms
+    fi
+
   done
 }
 
 # Main script execution
 setup_ubuntu_nodes
-
