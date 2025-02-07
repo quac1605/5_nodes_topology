@@ -63,16 +63,16 @@ EOF
 
     echo "$container setup complete."
 
-    # Determine the node number (array is 0-indexed so add 1)
-    node_num=$((i + 1))
-    # Set the netem delay based on node number
-    if [ "$node_num" -le 3 ]; then
-      echo "Setting netem delay for $container to 50ms..."
-      sudo containerlab tools netem set --node "$container" --interface eth1 --delay 50ms
-    else
-      echo "Setting netem delay for $container to 100ms..."
-      sudo containerlab tools netem set --node "$container" --interface eth1 --delay 100ms
-    fi
+    # # Determine the node number (array is 0-indexed so add 1)
+    # node_num=$((i + 1))
+    # # Set the netem delay based on node number
+    # if [ "$node_num" -le 3 ]; then
+    #   echo "Setting netem delay for $container to 50ms..."
+    #   sudo containerlab tools netem set --node "$container" --interface eth1 --delay 50ms
+    # else
+    #   echo "Setting netem delay for $container to 100ms..."
+    #   sudo containerlab tools netem set --node "$container" --interface eth1 --delay 100ms
+    # fi
 
   done
 }
