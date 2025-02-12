@@ -3,73 +3,140 @@ package main
 import (
 	"fmt"
 	"math"
+	"sort"
 )
 
-// Function to compute the Hilbert index from coordinates in a 5D space
-func hilbertIndex(coordinates []int, p int) int {
-	nDims := len(coordinates)
-	hIndex := 0
-
-	// Combine the coordinates to generate a Hilbert index using bitwise operations
-	for i := 0; i < nDims; i++ {
-		hIndex |= coordinates[i] << (i * p)
-	}
-	return hIndex
+// Node represents a network node with 3D attributes
+type Node struct {
+	RTT       uint32
+	Memory    uint32
+	CPU       uint32
+	Hilbert1D uint32
 }
 
-// Normalize and shift data to handle negative values
-func normalizeAndShiftData(data [][]int, p int) [][]int {
-	// Find the minimum value in each dimension
-	minValues := make([]int, len(data[0]))
-
-	// Initialize min values to a very large value
-	for i := 0; i < len(minValues); i++ {
-		minValues[i] = int(math.MaxInt32)
+// Rotate and Flip Function for Hilbert Curve
+func rot(n uint32, x, y, z *uint32, rx, ry, rz uint32) {
+	if rz == 1 {
+		*x, *y = *y, *x // Swap x and y
 	}
+	if ry == 0 {
+		if rx == 1 {
+			*x = n - 1 - *x
+			*y = n - 1 - *y
+		}
+		*x, *z = *z, *x // Swap x and z
+	}
+}
 
-	// Find the minimum for each dimension
-	for _, point := range data {
-		for i, val := range point {
-			if val < minValues[i] {
-				minValues[i] = val
-			}
+// Convert 3D (RTT, Memory, CPU) to 1D Hilbert Index
+func hilbert3D(order uint32, x, y, z uint32) uint32 {
+	n := uint32(1 << order) // Grid size
+	hilbertIndex := uint32(0)
+	s := n >> 1
+
+	for s > 0 {
+		rx := (x & s) >> (order - 1)
+		ry := (y & s) >> (order - 1)
+		rz := (z & s) >> (order - 1)
+
+		hilbertIndex += s * s * ((3 * rx) ^ ry)
+
+		rot(s, &x, &y, &z, rx, ry, rz)
+		s >>= 1
+	}
+	return hilbertIndex
+}
+
+// Normalize values to fit in the range [0, 1023]
+func normalize(value, maxValue uint32) uint32 {
+	return uint32(math.Round(float64(value) * 1023 / float64(maxValue)))
+}
+
+// Compute Hilbert Index after normalizing
+func ComputeHilbertValue(rtt, memory, cpu uint32, maxRTT, maxMemory, maxCPU uint32) uint32 {
+	// Normalize values to fit [0, 1023]
+	normalizedRTT := normalize(rtt, maxRTT)
+	normalizedMemory := normalize(memory, maxMemory)
+	normalizedCPU := normalize(cpu, maxCPU)
+
+	// Use Hilbert order of 10 (fits 3D space properly for [0, 1023])
+	hilbertOrder := uint32(10)
+
+	// Print the normalized values (for debugging)
+	fmt.Printf("Normalized Values - RTT: %d, Memory: %d, CPU: %d\n", normalizedRTT, normalizedMemory, normalizedCPU)
+
+	// Calculate the Hilbert index
+	return hilbert3D(hilbertOrder, normalizedRTT, normalizedMemory, normalizedCPU)
+}
+
+// HilbertTransform computes and sorts nodes by Hilbert 1D value
+func HilbertTransform(nodes []Node) []Node {
+	// Find the max values in the dataset for proper normalization
+	var maxRTT, maxMemory, maxCPU uint32
+	for _, node := range nodes {
+		if node.RTT > maxRTT {
+			maxRTT = node.RTT
+		}
+		if node.Memory > maxMemory {
+			maxMemory = node.Memory
+		}
+		if node.CPU > maxCPU {
+			maxCPU = node.CPU
 		}
 	}
 
-	// Normalize data to the range [0, 2^p - 1]
-	maxVal := int(math.Pow(2, float64(p)) - 1)
-	normalizedData := make([][]int, len(data))
-
-	for i, point := range data {
-		normalizedData[i] = make([]int, len(point))
-		for j, val := range point {
-			// Shift the value to make all values non-negative
-			shiftedVal := val - minValues[j]
-
-			// Scale to fit the range [0, 2^p - 1]
-			normalizedData[i][j] = int(float64(shiftedVal) / float64(maxVal) * float64(maxVal))
-		}
+	// Normalize and calculate Hilbert 1D for each node
+	for i := range nodes {
+		nodes[i].Hilbert1D = ComputeHilbertValue(nodes[i].RTT, nodes[i].Memory, nodes[i].CPU, maxRTT, maxMemory, maxCPU)
 	}
 
-	return normalizedData
+	// Sort nodes based on Hilbert 1D index
+	sort.Slice(nodes, func(i, j int) bool {
+		return nodes[i].Hilbert1D < nodes[j].Hilbert1D
+	})
+
+	return nodes
+}
+
+// QueryNodes finds nodes matching constraints
+func QueryNodes(nodes []Node, maxRTT, minMemory, minCPU uint32) []Node {
+	var result []Node
+	for _, node := range nodes {
+		if node.RTT <= maxRTT && node.Memory >= minMemory && node.CPU >= minCPU {
+			result = append(result, node)
+		}
+	}
+	return result
 }
 
 func main() {
-	// Example 5D data points with negative values
-	data := [][]int{
-		{12, -34, 56, 78, -90},
-		{-9, 45, -67, 89, 10},
+	// Sample dataset (RTT, Memory, CPU)
+	nodes := []Node{
+		{100, 128, 48, 0},
+		{50, 16, 12, 0},
+		{100, 256, 124, 0},
+		{50, 8, 8, 0},
+		{20, 32, 16, 0},
 	}
 
-	// Hilbert curve order (e.g., p = 5 for 32x32 grid)
-	p := 5
+	// Convert dataset to 1D Hilbert space
+	transformedNodes := HilbertTransform(nodes)
 
-	// Normalize and shift data to fit the 2^p grid and handle negative values
-	normalizedData := normalizeAndShiftData(data, p)
+	// Query parameters
+	maxRTT := uint32(100)
+	minMemory := uint32(16)
+	minCPU := uint32(6)
 
-	// Map each point to a 1D Hilbert index
-	for _, point := range normalizedData {
-		hIndex := hilbertIndex(point, p)
-		fmt.Printf("Hilbert Index for point %v: %d\n", point, hIndex)
+	// Print query command
+	fmt.Printf("Query Command: Find nodes with RTT ≤ %dms, Memory ≥ %dMB, CPU ≥ %d cores\n", maxRTT, minMemory, minCPU)
+
+	// Perform query
+	queryResults := QueryNodes(transformedNodes, maxRTT, minMemory, minCPU)
+
+	// Print results
+	fmt.Println("Query Results:")
+	for _, node := range queryResults {
+		fmt.Printf("RTT: %d, Memory: %d, CPU: %d => Hilbert1D: %d\n",
+			node.RTT, node.Memory, node.CPU, node.Hilbert1D)
 	}
 }

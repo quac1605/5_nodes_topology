@@ -15,6 +15,7 @@ require (
 	github.com/hashicorp/logutils v1.0.0 // indirect
 	github.com/hashicorp/memberlist v0.5.0 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
+	github.com/jtejido/hilbert v0.0.0-20190401142904-e729494a836b // indirect
 	github.com/miekg/dns v1.1.41 // indirect
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
 	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1 // indirect
