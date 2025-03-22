@@ -19,40 +19,32 @@ type Node struct {
 
 // Normalize and scale floating-point coordinates to uint32 range
 func normalizeAndScale(value, min, max float64, scaleMax uint32) uint32 {
-	// Normalize to [0, 1]
-	normalized := (value - min) / (max - min)
-
-	// Scale to uint32 range [0, scaleMax]
-	return uint32(math.Round(normalized * float64(scaleMax)))
+	normalized := (value - min) / (max - min)                 // Normalize to [0,1]
+	return uint32(math.Round(normalized * float64(scaleMax))) // Scale to [0, scaleMax]
 }
 
 // Convert 4D (X, Y, Memory, CPU) to 1D Hilbert Index
 func hilbert4D(order uint32, x, y, memory, cpu uint32) uint32 {
-	// Create a new Hilbert space mapper with the specified order and 4D space
 	sm, _ := hilbert.New(order, 4)
-
-	// Encode the x, y, memory, cpu values
 	hilbertIndex := sm.Encode(uint64(x), uint64(y), uint64(memory), uint64(cpu))
-
-	// Convert the hilbertIndex (which is of type *big.Int) to uint32
 	return uint32(hilbertIndex.Uint64()) // Convert *big.Int to uint64, then cast to uint32
 }
 
-// Compute Hilbert Index for 4D data with floating point normalization
+// Compute Hilbert Index for 4D data
 func ComputeHilbertValue(x, y float64, memory, cpu uint32, minX, maxX, minY, maxY float64) uint32 {
-	hilbertOrder := uint32(8)
+	hilbertOrder := uint32(10)
 	scaleMax := uint32((1 << hilbertOrder) - 1) // 2^order - 1
 
 	// Normalize and scale X and Y to uint32
 	xInt := normalizeAndScale(x, minX, maxX, scaleMax)
 	yInt := normalizeAndScale(y, minY, maxY, scaleMax)
 
-	// Calculate Hilbert index
+	// Compute Hilbert index
 	return hilbert4D(hilbertOrder, xInt, yInt, memory, cpu)
 }
 
 // HilbertTransform computes and sorts nodes by Hilbert 1D value
-func HilbertTransform(nodes []Node) []Node {
+func HilbertTransform(nodes []Node) ([]Node, float64, float64, float64, float64) {
 	// Find min/max for X and Y for normalization
 	minX, maxX := math.MaxFloat64, -math.MaxFloat64
 	minY, maxY := math.MaxFloat64, -math.MaxFloat64
@@ -82,17 +74,40 @@ func HilbertTransform(nodes []Node) []Node {
 		return nodes[i].Hilbert1D < nodes[j].Hilbert1D
 	})
 
-	return nodes
+	return nodes, minX, maxX, minY, maxY
 }
 
-// QueryNodes finds nodes matching constraints
-func QueryNodes(nodes []Node, minX, maxX, minY, maxY float64, minMemory, minCPU uint32) []Node {
+// QueryNodesUsingHilbertIndex filters by Hilbert index first, then applies original constraints
+func QueryNodesUsingHilbertIndex(nodes []Node, queryMinX, queryMaxX, queryMinY, queryMaxY float64, queryMinMemory, queryMinCPU uint32, minX, maxX, minY, maxY float64) []Node {
+	// Compute Hilbert index bounds for the query range
+	queryMinHilbert := ComputeHilbertValue(queryMinX, queryMinY, queryMinMemory, queryMinCPU, minX, maxX, minY, maxY)
+	queryMaxHilbert := ComputeHilbertValue(queryMaxX, queryMaxY, queryMinMemory, queryMinCPU, minX, maxX, minY, maxY)
+
+	fmt.Printf("\nQuery Hilbert Index Range: [%d, %d]\n", queryMinHilbert, queryMaxHilbert)
+	// Ensure the query range is valid
+	if queryMinHilbert > queryMaxHilbert {
+		return nil
+	}
+
+	// Find nodes within the Hilbert index range
 	var result []Node
 	for _, node := range nodes {
-		if node.X >= minX && node.X <= maxX &&
-			node.Y >= minY && node.Y <= maxY &&
-			node.Memory >= minMemory &&
-			node.CPU >= minCPU {
+		if node.Hilbert1D >= queryMinHilbert && node.Hilbert1D <= queryMaxHilbert {
+			result = append(result, node)
+		}
+	}
+
+	return result
+}
+
+// QueryNodesUsingOriginalData searches for nodes using original attribute constraints
+func QueryNodesUsingOriginalData(nodes []Node, queryMinX, queryMaxX, queryMinY, queryMaxY float64, queryMinMemory, queryMinCPU uint32) []Node {
+	var result []Node
+	for _, node := range nodes {
+		if node.X >= queryMinX && node.X <= queryMaxX &&
+			node.Y >= queryMinY && node.Y <= queryMaxY &&
+			node.Memory >= queryMinMemory &&
+			node.CPU >= queryMinCPU {
 			result = append(result, node)
 		}
 	}
@@ -115,7 +130,7 @@ func main() {
 	}
 
 	// Convert dataset to 1D Hilbert space
-	transformedNodes := HilbertTransform(nodes)
+	transformedNodes, minX, maxX, minY, maxY := HilbertTransform(nodes)
 
 	// Print the transformed dataset with Hilbert 1D values
 	fmt.Println("\nTransformed Dataset with Hilbert 1D Values:")
@@ -123,29 +138,51 @@ func main() {
 		fmt.Printf("X: %f, Y: %f, Memory: %d, CPU: %d => Hilbert1D: %d\n",
 			node.X, node.Y, node.Memory, node.CPU, node.Hilbert1D)
 	}
+
 	// Query parameters
-	queryMinX := -0.02      // X ≥ -0.02
-	queryMaxX := 0.02       // X ≤ 0.02
-	queryMinY := -0.01      // Y ≥ -0.01
-	queryMaxY := 0.1        // Y ≤ 0.05
-	minMemory := uint32(10) // Memory ≥ 10MB
-	minCPU := uint32(10)    // CPU ≥ 10 cores
+	queryMinX := -0.02           // X ≥ -0.02
+	queryMaxX := 0.02            // X ≤ 0.02
+	queryMinY := -0.01           // Y ≥ -0.01
+	queryMaxY := 0.1             // Y ≤ 0.1
+	queryMinMemory := uint32(10) // Memory ≥ 10MB
+	queryMinCPU := uint32(10)    // CPU ≥ 10 cores
 
 	// Print query command
 	fmt.Printf("\nQuery Command: Find nodes with X ∈ [%.2f, %.2f], Y ∈ [%.2f, %.2f], Memory ≥ %dMB, CPU ≥ %d cores\n",
-		queryMinX, queryMaxX, queryMinY, queryMaxY, minMemory, minCPU)
+		queryMinX, queryMaxX, queryMinY, queryMaxY, queryMinMemory, queryMinCPU)
 
-	// Perform query
-	queryResults := QueryNodes(nodes, queryMinX, queryMaxX, queryMinY, queryMaxY, minMemory, minCPU)
+	// Perform query using Hilbert 1D Index
+	queryResultsHilbert := QueryNodesUsingHilbertIndex(transformedNodes, queryMinX, queryMaxX, queryMinY, queryMaxY, queryMinMemory, queryMinCPU, minX, maxX, minY, maxY)
 
-	// Print query results
-	fmt.Println("\nQuery Results:")
-	if len(queryResults) == 0 {
+	// Print query results using Hilbert Index
+	fmt.Println("\nQuery Results Using Hilbert Index:")
+	if len(queryResultsHilbert) == 0 {
 		fmt.Println("No nodes found matching the criteria.")
 	} else {
-		for _, node := range queryResults {
+		for _, node := range queryResultsHilbert {
 			fmt.Printf("X: %f, Y: %f, Memory: %d, CPU: %d => Hilbert1D: %d\n",
 				node.X, node.Y, node.Memory, node.CPU, node.Hilbert1D)
 		}
+	}
+
+	// Perform query using original data
+	queryResultsOriginal := QueryNodesUsingOriginalData(nodes, queryMinX, queryMaxX, queryMinY, queryMaxY, queryMinMemory, queryMinCPU)
+
+	// Print query results using original data
+	fmt.Println("\nQuery Results Using Original Data:")
+	if len(queryResultsOriginal) == 0 {
+		fmt.Println("No nodes found matching the criteria.")
+	} else {
+		for _, node := range queryResultsOriginal {
+			fmt.Printf("X: %f, Y: %f, Memory: %d, CPU: %d\n",
+				node.X, node.Y, node.Memory, node.CPU)
+		}
+	}
+
+	// Compare the results
+	if len(queryResultsHilbert) == len(queryResultsOriginal) {
+		fmt.Println("\nBoth methods returned the same number of results.")
+	} else {
+		fmt.Println("\nThe methods returned different numbers of results.")
 	}
 }
