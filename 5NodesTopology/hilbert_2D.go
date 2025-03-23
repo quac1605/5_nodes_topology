@@ -77,7 +77,7 @@ func HilbertTransform(nodes []Node) ([]Node, float64, float64, float64, float64)
 func QueryNodesUsingHilbertIndex(nodes []Node, queryMinX, queryMaxX, queryMinY, queryMaxY float64, minX, maxX, minY, maxY float64) []Node {
 	queryMinHilbert := ComputeHilbertValue(queryMinX, queryMinY, minX, maxX, minY, maxY)
 	queryMaxHilbert := ComputeHilbertValue(queryMaxX, queryMaxY, minX, maxX, minY, maxY)
-
+	fmt.Printf("Query Hilbert1D Range: [%d, %d]\n", queryMinHilbert, queryMaxHilbert)
 	var result []Node
 	for _, node := range nodes {
 		if node.Hilbert1D >= queryMinHilbert && node.Hilbert1D <= queryMaxHilbert {
