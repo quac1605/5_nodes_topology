@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"sort"
 
 	"github.com/jtejido/hilbert"
@@ -24,11 +25,39 @@ func normalizeAndScale(value, min, max float64, scaleMax uint32) uint32 {
 	return uint32(math.Round(normalized * float64(scaleMax)))
 }
 
+// Denormalize a value back to the original range
+func denormalize(value uint32, min, max float64, scaleMax uint32) float64 {
+	return min + (float64(value)/float64(scaleMax))*(max-min)
+}
+
 // Convert 2D (X, Y) to 1D Hilbert Index
 func hilbert2D(order uint32, x, y uint32) uint32 {
 	sm, _ := hilbert.New(order, 2)
 	hilbertIndex := sm.Encode(uint64(x), uint64(y))
 	return uint32(hilbertIndex.Uint64()) // Convert *big.Int to uint64, then cast to uint32
+}
+
+// Decode Hilbert Index back to (X, Y) coordinates
+func DecodeHilbertValue(hilbertValue uint32, minX, maxX, minY, maxY float64) (float64, float64) {
+	hilbertOrder := uint32(10)
+	scaleMax := uint32((1 << hilbertOrder) - 1)
+
+	sm, _ := hilbert.New(hilbertOrder, 2)
+
+	// Convert uint32 to *big.Int
+	hilbertBigInt := new(big.Int).SetUint64(uint64(hilbertValue))
+
+	// Decode Hilbert Index (returns a slice)
+	decoded := sm.Decode(hilbertBigInt)
+
+	// Extract X and Y from slice
+	xInt, yInt := uint32(decoded[0]), uint32(decoded[1])
+
+	// Convert back to original float range
+	x := denormalize(xInt, minX, maxX, scaleMax)
+	y := denormalize(yInt, minY, maxY, scaleMax)
+
+	return x, y
 }
 
 // Compute Hilbert Index for 2D data
@@ -117,6 +146,13 @@ func main() {
 	fmt.Println("\nTransformed Dataset with Hilbert 1D Values:")
 	for _, node := range transformedNodes {
 		fmt.Printf("X: %f, Y: %f => Hilbert1D: %d\n", node.X, node.Y, node.Hilbert1D)
+	}
+
+	// Decode Hilbert Index back to (X, Y)
+	fmt.Println("\nDecoded Hilbert Values Back to Coordinates:")
+	for _, node := range nodes {
+		decodedX, decodedY := DecodeHilbertValue(node.Hilbert1D, minX, maxX, minY, maxY)
+		fmt.Printf("Hilbert1D: %d => Decoded X: %f, Decoded Y: %f\n", node.Hilbert1D, decodedX, decodedY)
 	}
 
 	// Query parameters
