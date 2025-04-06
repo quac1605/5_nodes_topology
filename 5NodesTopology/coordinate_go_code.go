@@ -3,23 +3,13 @@ package main
 import (
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"time"
 
 	"github.com/hashicorp/serf/client"
-	"github.com/hashicorp/serf/coordinate"
 )
 
 func main() {
-	// Set up logging to a file for RTT estimates
-	rttLogFile, err := os.OpenFile("rtt_estimates.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatalf("Failed to open RTT log file: %v", err)
-	}
-	defer rttLogFile.Close()
-	rttLogger := log.New(rttLogFile, "", log.LstdFlags)
-
 	// Set up logging to a file for coordinates
 	coordLogFile, err := os.OpenFile("coordinate.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -50,7 +40,7 @@ func main() {
 		for _, member := range clientMembers {
 			fmt.Printf("Node: %s, Address: %s:%d, Status: %s, Tags: %v\n",
 				member.Name, member.Addr, member.Port, member.Status, member.Tags)
-			fmt.Println(member)
+
 			// Fetch the network coordinate for the member
 			coord, err := serfClient.GetCoordinate(member.Name)
 			if err != nil {
@@ -60,51 +50,10 @@ func main() {
 
 				// Log the coordinate to the coordinate log file with timestamp
 				coordLogger.Printf("Time: %s - Coordinate for %s: %+v\n", time.Now().Format(time.RFC3339), member.Name, coord)
-
-				// Calculate RTT from coordinates to this node
-				for _, otherMember := range clientMembers {
-					if member.Name != otherMember.Name {
-						otherCoord, err := serfClient.GetCoordinate(otherMember.Name)
-						if err != nil {
-							fmt.Printf("Failed to get coordinate for node %s: %v\n", otherMember.Name, err)
-						} else {
-							rtt := calculateRTT(coord, otherCoord)
-							fmt.Printf("Estimated RTT from %s to %s: %.2f ms\n", member.Name, otherMember.Name, rtt)
-
-							// Log the RTT to the RTT log file with timestamp
-							rttLogger.Printf("Time: %s - Estimated RTT from %s to %s: %.2f ms\n", time.Now().Format(time.RFC3339), member.Name, otherMember.Name, rtt)
-						}
-					}
-				}
 			}
 		}
 
-		// Wait for a specified duration before next RTT calculation
-		time.Sleep(10 * time.Second) // Adjust the interval as needed
+		// Wait for a specified duration (5 seconds) before the next coordinate retrieval
+		time.Sleep(5 * time.Second) // Updated interval to 5 seconds
 	}
-}
-
-// calculateRTT calculates the RTT between two Vivaldi coordinates
-func calculateRTT(a, b *coordinate.Coordinate) float64 {
-	// Coordinates will always have the same dimensionality, so this is
-	// just a sanity check.
-	if len(a.Vec) != len(b.Vec) {
-		panic("dimensions aren't compatible")
-	}
-
-	// Calculate the Euclidean distance plus the heights.
-	sumsq := 0.0
-	for i := 0; i < len(a.Vec); i++ {
-		diff := a.Vec[i] - b.Vec[i]
-		sumsq += diff * diff
-	}
-	rtt := math.Sqrt(sumsq) + a.Height + b.Height
-
-	// Apply the adjustment components, guarding against negatives.
-	adjusted := rtt + a.Adjustment + b.Adjustment
-	if adjusted > 0.0 {
-		rtt = adjusted
-	}
-
-	return rtt * 1000 // Convert to milliseconds
 }
