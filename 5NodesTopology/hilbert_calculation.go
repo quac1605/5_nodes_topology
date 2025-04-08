@@ -2,141 +2,162 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
+	"math/big"
 	"sort"
+
+	"github.com/hashicorp/serf/client"
+	"github.com/jtejido/hilbert"
 )
 
-// Node represents a network node with 3D attributes
+const hilbertOrder = 16
+const scaleMax = (1 << hilbertOrder) - 1
+
 type Node struct {
-	RTT       uint32
+	Name      string
+	X         float64
+	Y         float64
 	Memory    uint32
 	CPU       uint32
-	Hilbert1D uint32
+	Hilbert1D uint64
 }
 
-// Rotate and Flip Function for Hilbert Curve
-func rot(n uint32, x, y, z *uint32, rx, ry, rz uint32) {
-	if rz == 1 {
-		*x, *y = *y, *x // Swap x and y
+// Static memory and CPU map per node name
+var resourceMap = map[string]struct {
+	Memory uint32
+	CPU    uint32
+}{
+	"clab-century-serf1": {Memory: 128, CPU: 12},
+	"clab-century-serf2": {Memory: 256, CPU: 20},
+	"clab-century-serf3": {Memory: 512, CPU: 8},
+	"clab-century-serf4": {Memory: 8, CPU: 8},
+	"clab-century-serf5": {Memory: 1024, CPU: 16},
+}
+
+func normalizeAndScale(value, min, max float64) uint32 {
+	if max == min {
+		return 0
 	}
-	if ry == 0 {
-		if rx == 1 {
-			*x = n - 1 - *x
-			*y = n - 1 - *y
-		}
-		*x, *z = *z, *x // Swap x and z
+	normalized := (value - min) / (max - min)
+	normalized = math.Max(0, math.Min(1, normalized))
+	return uint32(math.Round(normalized * float64(scaleMax)))
+}
+
+func denormalize(value uint32, min, max float64) float64 {
+	if scaleMax == 0 {
+		return min
 	}
+	normalized := float64(value) / float64(scaleMax)
+	return min + normalized*(max-min)
 }
 
-// Convert 3D (RTT, Memory, CPU) to 1D Hilbert Index
-func hilbert3D(order uint32, x, y, z uint32) uint32 {
-	n := uint32(1 << order) // Grid size
-	hilbertIndex := uint32(0)
-	s := n >> 1
-
-	for s > 0 {
-		rx := (x & s) >> (order - 1)
-		ry := (y & s) >> (order - 1)
-		rz := (z & s) >> (order - 1)
-
-		hilbertIndex += s * s * ((3 * rx) ^ ry)
-
-		rot(s, &x, &y, &z, rx, ry, rz)
-		s >>= 1
-	}
-	return hilbertIndex
+func hilbert4D(x, y, memory, cpu uint32) uint64 {
+	sm, _ := hilbert.New(hilbertOrder, 4)
+	hilbertIndex := sm.Encode(uint64(x), uint64(y), uint64(memory), uint64(cpu))
+	return hilbertIndex.Uint64()
 }
 
-// Normalize values to fit in the range [0, 1023]
-func normalize(value, maxValue uint32) uint32 {
-	return uint32(math.Round(float64(value) * 1023 / float64(maxValue)))
+func decodeHilbert4D(hilbertValue uint64) (uint32, uint32, uint32, uint32) {
+	sm, _ := hilbert.New(hilbertOrder, 4)
+	coords := sm.Decode(new(big.Int).SetUint64(hilbertValue))
+	return uint32(coords[0]), uint32(coords[1]), uint32(coords[2]), uint32(coords[3])
 }
 
-// Compute Hilbert Index after normalizing
-func ComputeHilbertValue(rtt, memory, cpu uint32, maxRTT, maxMemory, maxCPU uint32) uint32 {
-	// Normalize values to fit [0, 1023]
-	normalizedRTT := normalize(rtt, maxRTT)
-	normalizedMemory := normalize(memory, maxMemory)
-	normalizedCPU := normalize(cpu, maxCPU)
+func ComputeHilbertValue(x, y float64, memory, cpu uint32, minX, maxX, minY, maxY, minMem, maxMem, minCPU, maxCPU float64) uint64 {
+	xInt := normalizeAndScale(x, minX, maxX)
+	yInt := normalizeAndScale(y, minY, maxY)
+	memInt := normalizeAndScale(float64(memory), minMem, maxMem)
+	cpuInt := normalizeAndScale(float64(cpu), minCPU, maxCPU)
 
-	// Use Hilbert order of 10 (fits 3D space properly for [0, 1023])
-	hilbertOrder := uint32(10)
-
-	// Print the normalized values (for debugging)
-	fmt.Printf("Normalized Values - RTT: %d, Memory: %d, CPU: %d\n", normalizedRTT, normalizedMemory, normalizedCPU)
-
-	// Calculate the Hilbert index
-	return hilbert3D(hilbertOrder, normalizedRTT, normalizedMemory, normalizedCPU)
+	return hilbert4D(xInt, yInt, memInt, cpuInt)
 }
 
-// HilbertTransform computes and sorts nodes by Hilbert 1D value
-func HilbertTransform(nodes []Node) []Node {
-	// Find the max values in the dataset for proper normalization
-	var maxRTT, maxMemory, maxCPU uint32
+func HilbertTransform(nodes []Node) ([]Node, float64, float64, float64, float64, float64, float64, float64, float64) {
+	minX, maxX := math.MaxFloat64, -math.MaxFloat64
+	minY, maxY := math.MaxFloat64, -math.MaxFloat64
+	minMem, maxMem := math.MaxFloat64, -math.MaxFloat64
+	minCPU, maxCPU := math.MaxFloat64, -math.MaxFloat64
+
 	for _, node := range nodes {
-		if node.RTT > maxRTT {
-			maxRTT = node.RTT
-		}
-		if node.Memory > maxMemory {
-			maxMemory = node.Memory
-		}
-		if node.CPU > maxCPU {
-			maxCPU = node.CPU
-		}
+		minX = math.Min(minX, node.X)
+		maxX = math.Max(maxX, node.X)
+		minY = math.Min(minY, node.Y)
+		maxY = math.Max(maxY, node.Y)
+		minMem = math.Min(minMem, float64(node.Memory))
+		maxMem = math.Max(maxMem, float64(node.Memory))
+		minCPU = math.Min(minCPU, float64(node.CPU))
+		maxCPU = math.Max(maxCPU, float64(node.CPU))
 	}
 
-	// Normalize and calculate Hilbert 1D for each node
 	for i := range nodes {
-		nodes[i].Hilbert1D = ComputeHilbertValue(nodes[i].RTT, nodes[i].Memory, nodes[i].CPU, maxRTT, maxMemory, maxCPU)
+		nodes[i].Hilbert1D = ComputeHilbertValue(
+			nodes[i].X, nodes[i].Y, nodes[i].Memory, nodes[i].CPU,
+			minX, maxX, minY, maxY, minMem, maxMem, minCPU, maxCPU)
 	}
 
-	// Sort nodes based on Hilbert 1D index
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].Hilbert1D < nodes[j].Hilbert1D
 	})
 
-	return nodes
+	return nodes, minX, maxX, minY, maxY, minMem, maxMem, minCPU, maxCPU
 }
 
-// QueryNodes finds nodes matching constraints
-func QueryNodes(nodes []Node, maxRTT, minMemory, minCPU uint32) []Node {
-	var result []Node
-	for _, node := range nodes {
-		if node.RTT <= maxRTT && node.Memory >= minMemory && node.CPU >= minCPU {
-			result = append(result, node)
-		}
-	}
-	return result
+func DecodeHilbertValue(hilbertVal uint64, minX, maxX, minY, maxY, minMem, maxMem, minCPU, maxCPU float64) (float64, float64, float64, float64) {
+	xInt, yInt, memInt, cpuInt := decodeHilbert4D(hilbertVal)
+	x := denormalize(xInt, minX, maxX)
+	y := denormalize(yInt, minY, maxY)
+	mem := denormalize(memInt, minMem, maxMem)
+	cpu := denormalize(cpuInt, minCPU, maxCPU)
+	return x, y, mem, cpu
 }
 
 func main() {
-	// Sample dataset (RTT, Memory, CPU)
-	nodes := []Node{
-		{100, 128, 48, 0},
-		{50, 16, 12, 0},
-		{100, 256, 124, 0},
-		{50, 8, 8, 0},
-		{20, 32, 16, 0},
+	// Connect to Serf client
+	serfClient, err := client.NewRPCClient("127.0.0.1:7373")
+	if err != nil {
+		log.Fatalf("Failed to connect to Serf agent: %v", err)
+	}
+	defer serfClient.Close()
+
+	serfMembers, err := serfClient.Members()
+	if err != nil {
+		log.Fatalf("Failed to get members: %v", err)
 	}
 
-	// Convert dataset to 1D Hilbert space
-	transformedNodes := HilbertTransform(nodes)
+	var nodes []Node
+	for _, member := range serfMembers {
+		if res, ok := resourceMap[member.Name]; ok {
+			coord, err := serfClient.GetCoordinate(member.Name)
+			if err != nil || coord == nil {
+				log.Printf("Warning: Coordinate unavailable for %s, skipping...", member.Name)
+				continue
+			}
+			nodes = append(nodes, Node{
+				Name:   member.Name,
+				X:      coord.Vec[0],
+				Y:      coord.Vec[1],
+				Memory: res.Memory,
+				CPU:    res.CPU,
+			})
+		}
+	}
 
-	// Query parameters
-	maxRTT := uint32(100)
-	minMemory := uint32(16)
-	minCPU := uint32(6)
+	fmt.Println("Original Data with Coordinates:")
+	for _, node := range nodes {
+		fmt.Printf("%s -> X: %.6f, Y: %.6f, Memory: %d, CPU: %d\n", node.Name, node.X, node.Y, node.Memory, node.CPU)
+	}
 
-	// Print query command
-	fmt.Printf("Query Command: Find nodes with RTT ≤ %dms, Memory ≥ %dMB, CPU ≥ %d cores\n", maxRTT, minMemory, minCPU)
+	transformedNodes, minX, maxX, minY, maxY, minMem, maxMem, minCPU, maxCPU := HilbertTransform(nodes)
 
-	// Perform query
-	queryResults := QueryNodes(transformedNodes, maxRTT, minMemory, minCPU)
+	fmt.Println("\nSorted Nodes by Hilbert 1D Value:")
+	for _, node := range transformedNodes {
+		fmt.Printf("%s => Hilbert1D: %d\n", node.Name, node.Hilbert1D)
+	}
 
-	// Print results
-	fmt.Println("Query Results:")
-	for _, node := range queryResults {
-		fmt.Printf("RTT: %d, Memory: %d, CPU: %d => Hilbert1D: %d\n",
-			node.RTT, node.Memory, node.CPU, node.Hilbert1D)
+	fmt.Println("\nDecoded from Hilbert 1D:")
+	for _, node := range transformedNodes {
+		x, y, mem, cpu := DecodeHilbertValue(node.Hilbert1D, minX, maxX, minY, maxY, minMem, maxMem, minCPU, maxCPU)
+		fmt.Printf("%s => X: %.6f, Y: %.6f, Mem: %.2f, CPU: %.2f\n", node.Name, x, y, mem, cpu)
 	}
 }

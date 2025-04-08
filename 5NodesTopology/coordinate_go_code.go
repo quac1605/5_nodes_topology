@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/hashicorp/serf/client"
@@ -31,29 +32,36 @@ func main() {
 	defer serfClient.Close()
 
 	for {
-		// Retrieve and print members from the Serf client
 		clientMembers, err := serfClient.Members()
 		if err != nil {
 			log.Fatalf("Failed to retrieve members from client: %v", err)
 		}
 
+		coordinates := make(map[string]string)
+		var nodeNames []string
+
 		for _, member := range clientMembers {
-			fmt.Printf("Node: %s, Address: %s:%d, Status: %s, Tags: %v\n",
-				member.Name, member.Addr, member.Port, member.Status, member.Tags)
-
-			// Fetch the network coordinate for the member
 			coord, err := serfClient.GetCoordinate(member.Name)
-			if err != nil {
-				fmt.Printf("Failed to get coordinate for node %s: %v\n", member.Name, err)
+			if err != nil || coord == nil {
+				coordinates[member.Name] = "Unavailable"
 			} else {
-				fmt.Printf("Vivaldi Coordinate for %s: %+v\n", member.Name, coord)
-
-				// Log the coordinate to the coordinate log file with timestamp
-				coordLogger.Printf("Time: %s - Coordinate for %s: %+v\n", time.Now().Format(time.RFC3339), member.Name, coord)
+				coordinates[member.Name] = fmt.Sprintf("%v", coord.Vec)
 			}
+			nodeNames = append(nodeNames, member.Name)
 		}
 
-		// Wait for a specified duration (5 seconds) before the next coordinate retrieval
-		time.Sleep(5 * time.Second) // Updated interval to 5 seconds
+		sort.Strings(nodeNames)
+
+		timestamp := time.Now().Format(time.RFC3339)
+		fmt.Printf("\n--- Coordinate Snapshot @ %s ---\n", timestamp)
+		coordLogger.Printf("--- Coordinate Snapshot @ %s ---", timestamp)
+
+		for _, name := range nodeNames {
+			vec := coordinates[name]
+			fmt.Printf("%s: %s\n", name, vec)
+			coordLogger.Printf("%s: %s\n", name, vec)
+		}
+
+		time.Sleep(5 * time.Second)
 	}
 }
