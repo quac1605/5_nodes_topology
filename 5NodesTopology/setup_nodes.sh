@@ -68,10 +68,10 @@ EOF
     # Set the netem delay based on node number
     if [ "$node_num" -le 3 ]; then
       echo "Setting netem delay for $container to 50ms..."
-      sudo containerlab tools netem set --node "$container" --interface eth1 --delay 50ms
+      sudo containerlab tools netem set --node "$container" --interface eth1 --delay 10ms
     else
       echo "Setting netem delay for $container to 100ms..."
-      sudo containerlab tools netem set --node "$container" --interface eth1 --delay 100ms
+      sudo containerlab tools netem set --node "$container" --interface eth1 --delay 50ms
     fi
 
   done
