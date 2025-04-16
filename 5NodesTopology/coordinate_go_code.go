@@ -8,6 +8,8 @@ import (
 	"math/big"
 	"os"
 	"os/exec"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/serf/client"
@@ -19,10 +21,14 @@ const hilbertOrder = 16
 const scaleMax = (1 << hilbertOrder) - 1
 
 type Node struct {
-	Name      string
-	X         float64
-	Y         float64
-	Hilbert1D uint64
+	Name        string
+	X           float64
+	Y           float64
+	Hilbert1D   uint64
+	RTT         float64
+	PingRTT     float64
+	PingResult  string
+	HilbertDist float64
 }
 
 var nodeIPs = map[string]string{
@@ -86,27 +92,32 @@ func calculateRTT(a, b *coordinate.Coordinate) float64 {
 	if adjusted > 0.0 {
 		rtt = adjusted
 	}
-	return rtt * 1000 // milliseconds
+	return rtt * 1000 // ms
 }
 
-func ping(ip string) string {
+func ping(ip string) (string, float64) {
 	cmd := exec.Command("ping", "-c", "1", "-w", "2", ip)
 	output, err := cmd.Output()
 	if err != nil {
-		return fmt.Sprintf("ping failed: %v", err)
+		return fmt.Sprintf("ping failed: %v", err), -1
 	}
 	return parsePingOutput(string(output))
 }
 
-func parsePingOutput(output string) string {
+func parsePingOutput(output string) (string, float64) {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.Contains(line, "time=") {
-			return strings.TrimSpace(line[strings.Index(line, "time="):])
+			timeStr := line[strings.Index(line, "time=")+5:]
+			timeStr = strings.TrimSpace(timeStr)
+			timeStr = strings.Split(timeStr, " ")[0]
+			if ms, err := strconv.ParseFloat(timeStr, 64); err == nil {
+				return "time=" + timeStr + " ms", ms
+			}
 		}
 	}
-	return "No RTT found"
+	return "No RTT found", -1
 }
 
 func main() {
@@ -145,7 +156,9 @@ func main() {
 		log.Fatalf("Could not determine the current node")
 	}
 
-	// Find min/max
+	thisCoord, _ := serfClient.GetCoordinate(currentNode)
+
+	// Compute Hilbert
 	minX, maxX := math.MaxFloat64, -math.MaxFloat64
 	minY, maxY := math.MaxFloat64, -math.MaxFloat64
 	for _, node := range nodes {
@@ -154,41 +167,58 @@ func main() {
 		minY = math.Min(minY, node.Y)
 		maxY = math.Max(maxY, node.Y)
 	}
-
-	// Compute Hilbert 1D
 	for i := range nodes {
 		nodes[i].Hilbert1D = ComputeHilbertValue(nodes[i].X, nodes[i].Y, minX, maxX, minY, maxY)
 	}
 
-	// Extract current node
-	var this Node
+	var thisNode Node
 	for _, n := range nodes {
 		if n.Name == currentNode {
-			this = n
+			thisNode = n
 			break
 		}
 	}
 
-	fmt.Printf("\nCurrent node: %s\n", currentNode)
-	fmt.Println("\nComparison Table:")
-	fmt.Printf("%-25s %-15s %-20s %-25s %-25s\n", "Node", "HilbertDist", "Decoded (X,Y)", "Serf RTT (ms)", "Ping RTT")
-
-	for _, n := range nodes {
-		if n.Name == this.Name {
+	// Fill distances
+	var filtered []Node
+	for _, node := range nodes {
+		if node.Name == thisNode.Name {
 			continue
 		}
+		coord, _ := serfClient.GetCoordinate(node.Name)
+		node.RTT = calculateRTT(thisCoord, coord)
+		node.HilbertDist = math.Abs(float64(node.Hilbert1D) - float64(thisNode.Hilbert1D))
+		ip := nodeIPs[node.Name]
+		node.PingResult, node.PingRTT = ping(ip)
+		filtered = append(filtered, node)
+	}
 
-		// Hilbert distance
-		hDist := math.Abs(float64(n.Hilbert1D) - float64(this.Hilbert1D))
-		// Decode Hilbert back to 2D
-		x, y := DecodeHilbertValue(n.Hilbert1D, minX, maxX, minY, maxY)
-		// Serf RTT
-		thisCoord, _ := serfClient.GetCoordinate(this.Name)
-		otherCoord, _ := serfClient.GetCoordinate(n.Name)
-		rtt := calculateRTT(thisCoord, otherCoord)
-		// Ping
-		pingRTT := ping(nodeIPs[n.Name])
+	fmt.Printf("Current Node: %s\n\n", currentNode)
 
-		fmt.Printf("%-25s %-15.0f (%.6f, %.6f)     %-25.2f %-25s\n", n.Name, hDist, x, y, rtt, pingRTT)
+	// Sort & print each section
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].RTT < filtered[j].RTT
+	})
+	fmt.Println("1. Distance through Round Trip Time (ms):")
+	for _, n := range filtered {
+		fmt.Printf("   %-25s => %.2f ms\n", n.Name, n.RTT)
+	}
+
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].PingRTT < filtered[j].PingRTT
+	})
+	fmt.Println("\n2. Distance through Ping:")
+	for _, n := range filtered {
+		fmt.Printf("   %-25s => %s\n", n.Name, n.PingResult)
+	}
+
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].HilbertDist < filtered[j].HilbertDist
+	})
+	fmt.Println("\n3. Distance through Hilbert 1D Transform:")
+	for _, n := range filtered {
+		decodedX, decodedY := DecodeHilbertValue(n.Hilbert1D, minX, maxX, minY, maxY)
+		fmt.Printf("   %-25s => HilbertDist: %-15.0f Decoded(X,Y): (%.6f, %.6f)\n",
+			n.Name, n.HilbertDist, decodedX, decodedY)
 	}
 }
