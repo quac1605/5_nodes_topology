@@ -158,7 +158,6 @@ func main() {
 
 	thisCoord, _ := serfClient.GetCoordinate(currentNode)
 
-	// Compute Hilbert
 	minX, maxX := math.MaxFloat64, -math.MaxFloat64
 	minY, maxY := math.MaxFloat64, -math.MaxFloat64
 	for _, node := range nodes {
@@ -179,7 +178,6 @@ func main() {
 		}
 	}
 
-	// Fill distances
 	var filtered []Node
 	for _, node := range nodes {
 		if node.Name == thisNode.Name {
@@ -195,7 +193,6 @@ func main() {
 
 	fmt.Printf("Current Node: %s\n\n", currentNode)
 
-	// Sort & print each section
 	sort.Slice(filtered, func(i, j int) bool {
 		return filtered[i].RTT < filtered[j].RTT
 	})
@@ -218,7 +215,7 @@ func main() {
 	fmt.Println("\n3. Distance through Hilbert 1D Transform:")
 	for _, n := range filtered {
 		decodedX, decodedY := DecodeHilbertValue(n.Hilbert1D, minX, maxX, minY, maxY)
-		fmt.Printf("   %-25s => HilbertDist: %-15.0f Decoded(X,Y): (%.6f, %.6f)\n",
-			n.Name, n.HilbertDist, decodedX, decodedY)
+		fmt.Printf("   %-25s => HilbertDist: %-10.0f Decoded(X,Y): (%.6f, %.6f) Original(X,Y): (%.6f, %.6f)\n",
+			n.Name, n.HilbertDist, decodedX, decodedY, n.X, n.Y)
 	}
 }
