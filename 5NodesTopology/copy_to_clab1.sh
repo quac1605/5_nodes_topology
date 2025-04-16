@@ -1,18 +1,21 @@
 #!/bin/bash
 
-CONTAINER_NAME="clab-century-serf1"
 FILES=("hilbert_calculation.exe" "coordinate_2D.exe" "RTT_code.exe")
 
-for FILE_NAME in "${FILES[@]}"; do
-  TARGET_PATH="/tmp/$FILE_NAME"
+# Loop through container names clab-century-serf1 to clab-century-serf5
+for i in {1..5}; do
+  CONTAINER_NAME="clab-century-serf$i"
 
-  echo "Copying $FILE_NAME to Docker container $CONTAINER_NAME:$TARGET_PATH ..."
-  docker cp "$FILE_NAME" "$CONTAINER_NAME":"$TARGET_PATH"
+  for FILE_NAME in "${FILES[@]}"; do
+    TARGET_PATH="/tmp/$FILE_NAME"
 
-  if [ $? -eq 0 ]; then
+    echo "Copying $FILE_NAME to Docker container $CONTAINER_NAME:$TARGET_PATH ..."
+    docker cp "$FILE_NAME" "$CONTAINER_NAME":"$TARGET_PATH"
+
+    if [ $? -eq 0 ]; then
       echo "✅ $FILE_NAME copied successfully to $CONTAINER_NAME!"
   else
       echo "❌ Failed to copy $FILE_NAME. Make sure the container is running and the file exists in this folder."
   fi
+  done
 done
-
