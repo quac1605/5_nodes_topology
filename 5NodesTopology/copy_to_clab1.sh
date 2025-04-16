@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FILES=("hilbert_calculation.exe" "coordinate_2D.exe" "RTT_code.exe")
+FILES=("hilbert_calculation.exe" "coordinate_2D.exe" "RTT_code.exe" "coordinate_go_code.exe")
 
 # Loop through container names clab-century-serf1 to clab-century-serf5
 for i in {1..5}; do
