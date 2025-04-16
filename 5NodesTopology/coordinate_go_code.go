@@ -212,7 +212,7 @@ func main() {
 	sort.Slice(filtered, func(i, j int) bool {
 		return filtered[i].HilbertDist < filtered[j].HilbertDist
 	})
-	fmt.Println("\n3. Distance through Hilbert 1D Transform:")
+	fmt.Println("\n3. Distance with Hilbert 1D Transform:")
 	for _, n := range filtered {
 		decodedX, decodedY := DecodeHilbertValue(n.Hilbert1D, minX, maxX, minY, maxY)
 		fmt.Printf("   %-25s => HilbertDist: %-10.0f Decoded(X,Y): (%.6f, %.6f) Original(X,Y): (%.6f, %.6f)\n",
