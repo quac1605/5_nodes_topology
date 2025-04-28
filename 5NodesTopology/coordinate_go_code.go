@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"math/big"
 	"os"
 	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/google/hilbert"
 	"github.com/hashicorp/serf/client"
 	"github.com/hashicorp/serf/coordinate"
-	"github.com/jtejido/hilbert"
 )
 
 const hilbertOrder = 16
-const scaleMax = (1 << hilbertOrder) - 1
+const scaleMax = 255 // Maximum value for scaling (255 for 256x256 Hilbert space)
 
 type Node struct {
 	Name        string
@@ -32,15 +31,15 @@ type Node struct {
 }
 
 var nodeIPs = map[string]string{
-	"clab-century-serf1": "10.0.1.11",
-	"clab-century-serf2": "10.0.1.12",
-	"clab-century-serf3": "10.0.1.13",
-	"clab-century-serf4": "10.0.1.14",
-	"clab-century-serf5": "10.0.1.15",
-	"clab-century-serf6": "10.0.1.16",
-	"clab-century-serf7": "10.0.1.17",
-	"clab-century-serf8": "10.0.1.18",
-	"clab-century-serf9": "10.0.1.19",
+	"clab-century-serf1":  "10.0.1.11",
+	"clab-century-serf2":  "10.0.1.12",
+	"clab-century-serf3":  "10.0.1.13",
+	"clab-century-serf4":  "10.0.1.14",
+	"clab-century-serf5":  "10.0.1.15",
+	"clab-century-serf6":  "10.0.1.16",
+	"clab-century-serf7":  "10.0.1.17",
+	"clab-century-serf8":  "10.0.1.18",
+	"clab-century-serf9":  "10.0.1.19",
 	"clab-century-serf10": "10.0.1.20",
 	"clab-century-serf11": "10.0.1.21",
 	"clab-century-serf12": "10.0.1.22",
@@ -60,7 +59,8 @@ func normalizeAndScale(value, min, max float64) uint32 {
 	}
 	normalized := (value - min) / (max - min)
 	normalized = math.Max(0, math.Min(1, normalized))
-	return uint32(math.Round(normalized * float64(scaleMax)))
+	// Scale the value to the 0-255 range for the Hilbert curve
+	return uint32(math.Round(normalized * 255)) // Maximum value is 255 for a 256x256 grid
 }
 
 func denormalize(value uint32, min, max float64) float64 {
@@ -72,14 +72,21 @@ func denormalize(value uint32, min, max float64) float64 {
 }
 
 func hilbert2D(x, y uint32) uint64 {
-	sm, _ := hilbert.New(hilbertOrder, 2)
-	return sm.Encode(uint64(x), uint64(y)).Uint64()
+	hilbertSpace, _ := hilbert.NewHilbert(scaleMax + 1) // Initialize Hilbert with size 256
+	t, err := hilbertSpace.MapInverse(int(x), int(y))   // Correctly handle the two return values
+	if err != nil {
+		log.Fatalf("Error in Hilbert MapInverse: %v", err)
+	}
+	return uint64(t)
 }
 
 func decodeHilbert2D(hilbertValue uint64) (uint32, uint32) {
-	sm, _ := hilbert.New(hilbertOrder, 2)
-	coords := sm.Decode(new(big.Int).SetUint64(hilbertValue))
-	return uint32(coords[0]), uint32(coords[1])
+	hilbertSpace, _ := hilbert.NewHilbert(scaleMax + 1)
+	x, y, err := hilbertSpace.Map(int(hilbertValue)) // Correctly handle the two return values
+	if err != nil {
+		log.Fatalf("Error in Hilbert Map: %v", err)
+	}
+	return uint32(x), uint32(y)
 }
 
 func ComputeHilbertValue(x, y float64, minX, maxX, minY, maxY float64) uint64 {
@@ -230,7 +237,7 @@ func main() {
 	fmt.Println("\n3. Distance with Hilbert 1D Transform:")
 	for _, n := range filtered {
 		decodedX, decodedY := DecodeHilbertValue(n.Hilbert1D, minX, maxX, minY, maxY)
-		fmt.Printf("   %-25s => HilbertDist: %-10.0f Decoded(X,Y): (%.6f, %.6f) Original(X,Y): (%.6f, %.6f)\n",
-			n.Name, n.HilbertDist, decodedX, decodedY, n.X, n.Y)
+		fmt.Printf("   %-25s => Hilbert1D: %-10d HilbertDist: %-10.0f Decoded(X,Y): (%.6f, %.6f) Original(X,Y): (%.6f, %.6f)\n",
+			n.Name, n.Hilbert1D, n.HilbertDist, decodedX, decodedY, n.X, n.Y)
 	}
 }
