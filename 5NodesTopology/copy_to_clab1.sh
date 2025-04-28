@@ -3,7 +3,7 @@
 FILES=("hilbert_calculation.exe" "coordinate_2D.exe" "RTT_code.exe" "coordinate_go_code.exe")
 
 # Loop through container names clab-century-serf1 to clab-century-serf5
-for i in {1..5}; do
+for i in {1..20}; do
   CONTAINER_NAME="clab-century-serf$i"
 
   for FILE_NAME in "${FILES[@]}"; do

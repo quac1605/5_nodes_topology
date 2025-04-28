@@ -1,4 +1,4 @@
-! Startup-config last modified at Wed Apr 16 11:37:54 2025 by root
+! Startup-config last modified at Mon Apr 28 11:22:21 2025 by root
 ! device: central_switch (cEOSLab, EOS-4.28.8.1M-32999662.42881M (engineering build))
 !
 no aaa root
@@ -32,9 +32,39 @@ interface Ethernet4
 !
 interface Ethernet5
 !
+interface Ethernet6
+!
+interface Ethernet7
+!
+interface Ethernet8
+!
+interface Ethernet9
+!
+interface Ethernet10
+!
+interface Ethernet11
+!
+interface Ethernet12
+!
+interface Ethernet13
+!
+interface Ethernet14
+!
+interface Ethernet15
+!
+interface Ethernet16
+!
+interface Ethernet17
+!
+interface Ethernet18
+!
+interface Ethernet19
+!
+interface Ethernet20
+!
 interface Management0
-   ip address 172.20.20.7/24
-   ipv6 address 3fff:172:20:20::7/64
+   ip address 172.20.20.21/24
+   ipv6 address 3fff:172:20:20::15/64
 !
 no ip routing
 !

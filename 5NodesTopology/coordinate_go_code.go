@@ -37,6 +37,21 @@ var nodeIPs = map[string]string{
 	"clab-century-serf3": "10.0.1.13",
 	"clab-century-serf4": "10.0.1.14",
 	"clab-century-serf5": "10.0.1.15",
+	"clab-century-serf6": "10.0.1.16",
+	"clab-century-serf7": "10.0.1.17",
+	"clab-century-serf8": "10.0.1.18",
+	"clab-century-serf9": "10.0.1.19",
+	"clab-century-serf10": "10.0.1.20",
+	"clab-century-serf11": "10.0.1.21",
+	"clab-century-serf12": "10.0.1.22",
+	"clab-century-serf13": "10.0.1.23",
+	"clab-century-serf14": "10.0.1.24",
+	"clab-century-serf15": "10.0.1.25",
+	"clab-century-serf16": "10.0.1.26",
+	"clab-century-serf17": "10.0.1.27",
+	"clab-century-serf18": "10.0.1.28",
+	"clab-century-serf19": "10.0.1.29",
+	"clab-century-serf20": "10.0.1.30",
 }
 
 func normalizeAndScale(value, min, max float64) uint32 {

@@ -5,7 +5,7 @@ joining_node="clab-century-serf1"
 
 # List of containers (Ubuntu nodes from 2 to 100)
 containers=()
-for i in {2..5}; do
+for i in {2..20}; do
   containers+=(clab-century-serf$i)
 done
 
@@ -29,28 +29,28 @@ if [[ ${#ip_addresses[@]} -eq 0 ]]; then
   exit 1
 fi
 
-# # Join all nodes together using the 'serf join' command
-# join_command="/opt/serfapp/serf join ${ip_addresses[*]}"
-# echo "Joining the cluster from $joining_node with the following command:"
-# echo "$join_command"
+# Join all nodes together using the 'serf join' command
+join_command="/opt/serfapp/serf join ${ip_addresses[*]}"
+echo "Joining the cluster from $joining_node with the following command:"
+echo "$join_command"
 
-# # Execute the join command on the first node
-# docker exec "$joining_node" bash -c "$join_command"
-
-# echo "Cluster joined successfully."
-
-# Join each node separately with a sleep timer in between
-for ip in "${ip_addresses[@]}"; do
-  join_command="/opt/serfapp/serf join $ip"
-  echo "Joining node $joining_node to $ip with the following command:"
-  echo "$join_command"
-
-  # Execute the join command on the first node
-  docker exec "$joining_node" bash -c "$join_command"
-  
-  # Sleep for a specified duration (e.g., 2 seconds)
-  sleep 10
-done
+# Execute the join command on the first node
+docker exec "$joining_node" bash -c "$join_command"
 
 echo "Cluster joined successfully."
+
+# Join each node separately with a sleep timer in between
+# for ip in "${ip_addresses[@]}"; do
+#   join_command="/opt/serfapp/serf join $ip"
+#   echo "Joining node $joining_node to $ip with the following command:"
+#   echo "$join_command"
+
+#   # Execute the join command on the first node
+#   docker exec "$joining_node" bash -c "$join_command"
+  
+#   # Sleep for a specified duration (e.g., 2 seconds)
+#   sleep 10
+# done
+
+# echo "Cluster joined successfully."
 

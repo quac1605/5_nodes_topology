@@ -9,37 +9,82 @@ topology:
     serf1:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      # memory: 512mb
-      # cpu: 1
-      # startup-delay: 0.05
     serf2:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      # memory: 512mb
-      # cpu: 1.5
-      # startup-delay: 0.05
     serf3:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      # memory: 1024mb
-      # cpu: 1.3
-      # startup-delay: 0.05
     serf4:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      # memory: 2048mb
-      # cpu: 2
-      # startup-delay: 0.1
     serf5:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-      # memory: 1.5gb
-      # cpu: 1.7
-      # startup-delay: 0.1    
+    serf6:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf7:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf8:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf9:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf10:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf11:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf12:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf13:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf14:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf15:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf16:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf17:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf18:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf19:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf20:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+
   links:
-    # Central switch to serf nodes
     - endpoints: ["central_switch:eth1", "serf1:eth1"]
     - endpoints: ["central_switch:eth2", "serf2:eth1"]
     - endpoints: ["central_switch:eth3", "serf3:eth1"]
     - endpoints: ["central_switch:eth4", "serf4:eth1"]
     - endpoints: ["central_switch:eth5", "serf5:eth1"]
+    - endpoints: ["central_switch:eth6", "serf6:eth1"]
+    - endpoints: ["central_switch:eth7", "serf7:eth1"]
+    - endpoints: ["central_switch:eth8", "serf8:eth1"]
+    - endpoints: ["central_switch:eth9", "serf9:eth1"]
+    - endpoints: ["central_switch:eth10", "serf10:eth1"]
+    - endpoints: ["central_switch:eth11", "serf11:eth1"]
+    - endpoints: ["central_switch:eth12", "serf12:eth1"]
+    - endpoints: ["central_switch:eth13", "serf13:eth1"]
+    - endpoints: ["central_switch:eth14", "serf14:eth1"]
+    - endpoints: ["central_switch:eth15", "serf15:eth1"]
+    - endpoints: ["central_switch:eth16", "serf16:eth1"]
+    - endpoints: ["central_switch:eth17", "serf17:eth1"]
+    - endpoints: ["central_switch:eth18", "serf18:eth1"]
+    - endpoints: ["central_switch:eth19", "serf19:eth1"]
+    - endpoints: ["central_switch:eth20", "serf20:eth1"]

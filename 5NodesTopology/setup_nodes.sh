@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# List of containers (Ubuntu nodes for 5 nodes)
+# List of containers (Ubuntu nodes for 20 nodes)
 containers=()
-for i in {1..5}; do
+for i in {1..20}; do
   containers+=(clab-century-serf$i)
 done
 
@@ -25,7 +25,7 @@ setup_ubuntu_nodes() {
     echo "Setting up $container..."
 
     # Get the IP address of the eth1 interface directly from within the container
-    ip_address=$(docker exec $container ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
+    ip_address=$(docker exec "$container" ip -4 addr show eth1 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
     if [ -z "$ip_address" ]; then
       echo "Failed to retrieve IP address for $container"
       continue
@@ -64,7 +64,7 @@ EOF
     echo "$container setup complete."
 
     # Set the netem delay based on node number (index i is 0-based)
-    delay=$(( (i + 1) * 20 ))
+    delay=$(( (i + 1) * 5 ))
     echo "Setting netem delay for $container to ${delay}ms..."
     sudo containerlab tools netem set --node "$container" --interface eth1 --delay "${delay}ms"
 
