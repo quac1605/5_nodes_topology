@@ -1,13 +1,13 @@
 #!/bin/bash
 
-FILES=("hilbert_calculation.exe" "coordinate_2D.exe" "RTT_code.exe" "coordinate_go_code.exe")
+FILES=("coordinate_ping_RTT_printcode" "RTT_code.exe" "coordinate_go_code.exe")
 
 # Loop through container names clab-century-serf1 to clab-century-serf5
 for i in {1..20}; do
   CONTAINER_NAME="clab-century-serf$i"
 
   for FILE_NAME in "${FILES[@]}"; do
-    TARGET_PATH="/tmp/$FILE_NAME"
+    TARGET_PATH="/opt/serfapp/$FILE_NAME"
 
     echo "Copying $FILE_NAME to Docker container $CONTAINER_NAME:$TARGET_PATH ..."
     docker cp "$FILE_NAME" "$CONTAINER_NAME":"$TARGET_PATH"
