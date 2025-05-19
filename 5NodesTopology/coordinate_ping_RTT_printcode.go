@@ -97,14 +97,6 @@ func logAndPrint(logger *log.Logger, format string, v ...any) {
 }
 
 func main() {
-	logFile, err := os.Create("nodes_log.txt")
-	if err != nil {
-		log.Fatalf("Could not create log file: %v", err)
-	}
-	defer logFile.Close()
-
-	logger := log.New(logFile, "", log.LstdFlags)
-
 	serfClient, err := client.NewRPCClient("127.0.0.1:7373")
 	if err != nil {
 		log.Fatalf("Failed to connect to Serf: %v", err)
@@ -114,9 +106,17 @@ func main() {
 	hostname, _ := os.Hostname()
 
 	for {
+		// Overwrite log file on each iteration
+		logFile, err := os.Create("nodes_log.txt")
+		if err != nil {
+			log.Fatalf("Could not create log file: %v", err)
+		}
+		logger := log.New(logFile, "", log.LstdFlags)
+
 		members, err := serfClient.Members()
 		if err != nil {
 			logAndPrint(logger, "Failed to get members: %v\n", err)
+			logFile.Close()
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -141,6 +141,7 @@ func main() {
 
 		if currentNode == "" {
 			logAndPrint(logger, "Could not determine the current node\n")
+			logFile.Close()
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -187,6 +188,7 @@ func main() {
 			logAndPrint(logger, "Node: %-25s => Ping: %s\n", n.Name, n.PingResult)
 		}
 
+		logFile.Close()
 		time.Sleep(2 * time.Second)
 	}
 }
