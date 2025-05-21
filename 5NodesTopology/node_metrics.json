@@ -1,0 +1,422 @@
+{
+    "clab-century-serf1": {
+        "coordinates": {
+            "x": -0.003769,
+            "y": -0.002932
+        },
+        "normalized_coords": {
+            "x": 27658,
+            "y": 28623
+        },
+        "hilbert_index": 681922713,
+        "reconstructed_norm": {
+            "x": 27658,
+            "y": 28623
+        },
+        "reconstructed_coords": {
+            "x": -0.003769493476768141,
+            "y": -0.002932473701075758
+        },
+        "rtt_ms": null,
+        "ping_ms": null
+    },
+    "clab-century-serf4": {
+        "coordinates": {
+            "x": -0.00105,
+            "y": 0.000469
+        },
+        "normalized_coords": {
+            "x": 31190,
+            "y": 33045
+        },
+        "hilbert_index": 2143482413,
+        "reconstructed_norm": {
+            "x": 31190,
+            "y": 33045
+        },
+        "reconstructed_coords": {
+            "x": -0.0010507669947356392,
+            "y": 0.00046842114900435064
+        },
+        "rtt_ms": 33.4,
+        "ping_ms": 32.4
+    },
+    "clab-century-serf5": {
+        "coordinates": {
+            "x": -0.004084,
+            "y": -0.004285
+        },
+        "normalized_coords": {
+            "x": 27249,
+            "y": 26864
+        },
+        "hilbert_index": 679766529,
+        "reconstructed_norm": {
+            "x": 27249,
+            "y": 26864
+        },
+        "reconstructed_coords": {
+            "x": -0.00408431769283589,
+            "y": -0.004285294605935758
+        },
+        "rtt_ms": 35.71,
+        "ping_ms": 37.1
+    },
+    "clab-century-serf6": {
+        "coordinates": {
+            "x": -0.001892,
+            "y": -0.001692
+        },
+        "normalized_coords": {
+            "x": 30097,
+            "y": 30235
+        },
+        "hilbert_index": 707248716,
+        "reconstructed_norm": {
+            "x": 30097,
+            "y": 30235
+        },
+        "reconstructed_coords": {
+            "x": -0.0018920943007553238,
+            "y": -0.0016927083237964421
+        },
+        "rtt_ms": 48.5,
+        "ping_ms": 41.4
+    },
+    "clab-century-serf11": {
+        "coordinates": {
+            "x": -0.005494,
+            "y": -0.004522
+        },
+        "normalized_coords": {
+            "x": 25417,
+            "y": 26556
+        },
+        "hilbert_index": 674291641,
+        "reconstructed_norm": {
+            "x": 25417,
+            "y": 26556
+        },
+        "reconstructed_coords": {
+            "x": -0.005494483863584344,
+            "y": -0.004522172854200042
+        },
+        "rtt_ms": 77.83,
+        "ping_ms": 68.0
+    },
+    "clab-century-serf20": {
+        "coordinates": {
+            "x": -0.013829,
+            "y": 0.003827
+        },
+        "normalized_coords": {
+            "x": 14589,
+            "y": 37411
+        },
+        "hilbert_index": 1178884444,
+        "reconstructed_norm": {
+            "x": 14589,
+            "y": 37411
+        },
+        "reconstructed_coords": {
+            "x": -0.013829243305104145,
+            "y": 0.003826247226672772
+        },
+        "rtt_ms": 122.57,
+        "ping_ms": 112.0
+    },
+    "clab-century-serf2": {
+        "coordinates": {
+            "x": -0.002694,
+            "y": -0.002012
+        },
+        "normalized_coords": {
+            "x": 29055,
+            "y": 29819
+        },
+        "hilbert_index": 705768112,
+        "reconstructed_norm": {
+            "x": 29055,
+            "y": 29819
+        },
+        "reconstructed_coords": {
+            "x": -0.0026941647974364873,
+            "y": -0.0020126477759975572
+        },
+        "rtt_ms": 21.18,
+        "ping_ms": 22.8
+    },
+    "clab-century-serf15": {
+        "coordinates": {
+            "x": 0.025386,
+            "y": 0.016081
+        },
+        "normalized_coords": {
+            "x": 65535,
+            "y": 53345
+        },
+        "hilbert_index": 2891268436,
+        "reconstructed_norm": {
+            "x": 65535,
+            "y": 53345
+        },
+        "reconstructed_coords": {
+            "x": 0.025386000000000002,
+            "y": 0.016080851148241402
+        },
+        "rtt_ms": 90.02,
+        "ping_ms": 86.6
+    },
+    "clab-century-serf16": {
+        "coordinates": {
+            "x": -0.025059,
+            "y": -0.024946
+        },
+        "normalized_coords": {
+            "x": 0,
+            "y": 0
+        },
+        "hilbert_index": 0,
+        "reconstructed_norm": {
+            "x": 0,
+            "y": 0
+        },
+        "reconstructed_coords": {
+            "x": -0.025059,
+            "y": -0.024946
+        },
+        "rtt_ms": 100.27,
+        "ping_ms": 92.4
+    },
+    "clab-century-serf19": {
+        "coordinates": {
+            "x": 0.008441,
+            "y": 0.025456
+        },
+        "normalized_coords": {
+            "x": 43521,
+            "y": 65534
+        },
+        "hilbert_index": 2576962903,
+        "reconstructed_norm": {
+            "x": 43521,
+            "y": 65534
+        },
+        "reconstructed_coords": {
+            "x": 0.00844091371023117,
+            "y": 0.02545523091477837
+        },
+        "rtt_ms": 118.38,
+        "ping_ms": 109.0
+    },
+    "clab-century-serf3": {
+        "coordinates": {
+            "x": -0.002641,
+            "y": -0.002766
+        },
+        "normalized_coords": {
+            "x": 29124,
+            "y": 28839
+        },
+        "hilbert_index": 704846895,
+        "reconstructed_norm": {
+            "x": 29124,
+            "y": 28839
+        },
+        "reconstructed_coords": {
+            "x": -0.002641052643625543,
+            "y": -0.0027663512932021017
+        },
+        "rtt_ms": 33.52,
+        "ping_ms": 27.2
+    },
+    "clab-century-serf8": {
+        "coordinates": {
+            "x": -0.002398,
+            "y": -0.004501
+        },
+        "normalized_coords": {
+            "x": 29439,
+            "y": 26583
+        },
+        "hilbert_index": 689548352,
+        "reconstructed_norm": {
+            "x": 29439,
+            "y": 26583
+        },
+        "reconstructed_coords": {
+            "x": -0.002398584115358208,
+            "y": -0.004501407553215837
+        },
+        "rtt_ms": 54.95,
+        "ping_ms": 52.6
+    },
+    "clab-century-serf10": {
+        "coordinates": {
+            "x": 0.002294,
+            "y": 0.000604
+        },
+        "normalized_coords": {
+            "x": 35535,
+            "y": 33221
+        },
+        "hilbert_index": 2152532716,
+        "reconstructed_norm": {
+            "x": 35535,
+            "y": 33221
+        },
+        "reconstructed_coords": {
+            "x": 0.0022937592126344684,
+            "y": 0.0006037801480125171
+        },
+        "rtt_ms": 70.68,
+        "ping_ms": 62.8
+    },
+    "clab-century-serf7": {
+        "coordinates": {
+            "x": -0.000191,
+            "y": -0.001727
+        },
+        "normalized_coords": {
+            "x": 32306,
+            "y": 30190
+        },
+        "hilbert_index": 711455576,
+        "reconstructed_norm": {
+            "x": 32306,
+            "y": 30190
+        },
+        "reconstructed_coords": {
+            "x": -0.00019173563744563984,
+            "y": -0.001727317158770121
+        },
+        "rtt_ms": 48.56,
+        "ping_ms": 50.3
+    },
+    "clab-century-serf9": {
+        "coordinates": {
+            "x": -0.00267,
+            "y": -0.001597
+        },
+        "normalized_coords": {
+            "x": 29086,
+            "y": 30359
+        },
+        "hilbert_index": 706160873,
+        "reconstructed_norm": {
+            "x": 29086,
+            "y": 30359
+        },
+        "reconstructed_coords": {
+            "x": -0.00267030281528954,
+            "y": -0.0015973417563134168
+        },
+        "rtt_ms": 64.61,
+        "ping_ms": 56.9
+    },
+    "clab-century-serf14": {
+        "coordinates": {
+            "x": -0.007577,
+            "y": -0.006857
+        },
+        "normalized_coords": {
+            "x": 22711,
+            "y": 23520
+        },
+        "hilbert_index": 579842837,
+        "reconstructed_norm": {
+            "x": 22711,
+            "y": 23520
+        },
+        "reconstructed_coords": {
+            "x": -0.007577403982604716,
+            "y": -0.006857115587090866
+        },
+        "rtt_ms": 86.93,
+        "ping_ms": 81.9
+    },
+    "clab-century-serf17": {
+        "coordinates": {
+            "x": 0.020387,
+            "y": 0.003258
+        },
+        "normalized_coords": {
+            "x": 59040,
+            "y": 36672
+        },
+        "hilbert_index": 3166926506,
+        "reconstructed_norm": {
+            "x": 59040,
+            "y": 36672
+        },
+        "reconstructed_coords": {
+            "x": 0.020386529869535364,
+            "y": 0.003257893247882813
+        },
+        "rtt_ms": 101.23,
+        "ping_ms": 96.3
+    },
+    "clab-century-serf18": {
+        "coordinates": {
+            "x": -0.017038,
+            "y": -0.007201
+        },
+        "normalized_coords": {
+            "x": 10420,
+            "y": 23072
+        },
+        "hilbert_index": 931417008,
+        "reconstructed_norm": {
+            "x": 10420,
+            "y": 23072
+        },
+        "reconstructed_coords": {
+            "x": -0.017038295033188374,
+            "y": -0.007201665766384372
+        },
+        "rtt_ms": 109.26,
+        "ping_ms": 103.0
+    },
+    "clab-century-serf12": {
+        "coordinates": {
+            "x": -0.00243,
+            "y": -0.000708
+        },
+        "normalized_coords": {
+            "x": 29398,
+            "y": 31515
+        },
+        "hilbert_index": 719452379,
+        "reconstructed_norm": {
+            "x": 29398,
+            "y": 31515
+        },
+        "reconstructed_coords": {
+            "x": -0.0024301435111009385,
+            "y": -0.0007082792401007058
+        },
+        "rtt_ms": 72.52,
+        "ping_ms": 73.0
+    },
+    "clab-century-serf13": {
+        "coordinates": {
+            "x": -0.011469,
+            "y": -0.023773
+        },
+        "normalized_coords": {
+            "x": 17655,
+            "y": 1525
+        },
+        "hilbert_index": 270729358,
+        "reconstructed_norm": {
+            "x": 17655,
+            "y": 1525
+        },
+        "reconstructed_coords": {
+            "x": -0.011469216296635387,
+            "y": -0.02377314503700313
+        },
+        "rtt_ms": 86.07,
+        "ping_ms": 79.7
+    }
+}
