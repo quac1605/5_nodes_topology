@@ -62,6 +62,8 @@ def parse_log(filename):
                 ping_match = re.search(r'time=([\d.]+)\s*ms', data)
                 if ping_match:
                     pings[node] = float(ping_match.group(1))
+                else:
+                    pings[node] = None  # represents failed ping
 
     return coordinates, rtts, pings
 
@@ -71,37 +73,63 @@ def main():
     norm_coords, min_vals, max_vals = normalize_coordinates(coords, P)
     hilbert_curve = HilbertCurve(P, N)
 
-    results = {}
+    hilbert_values = {}
+    recon_norm = {}
+    recon_coords = {}
+
     for node, point in coords.items():
         norm_point = norm_coords[node]
         hilbert_val = int(hilbert_curve.distance_from_point(list(norm_point)))
-        recon_norm = hilbert_curve.point_from_distance(hilbert_val)
-        recon_orig = denormalize(np.array(recon_norm), min_vals, max_vals, P)
+        decoded_norm = hilbert_curve.point_from_distance(hilbert_val)
+        decoded_coord = denormalize(np.array(decoded_norm), min_vals, max_vals, P)
 
-        results[node] = {
-            'coordinates': {'x': float(point[0]), 'y': float(point[1])},
-            'normalized_coords': {'x': int(norm_point[0]), 'y': int(norm_point[1])},
-            'hilbert_index': int(hilbert_val),
-            'reconstructed_norm': {'x': int(recon_norm[0]), 'y': int(recon_norm[1])},
-            'reconstructed_coords': {'x': float(recon_orig[0]), 'y': float(recon_orig[1])},
-            'rtt_ms': float(rtts[node]) if node in rtts else None,
-            'ping_ms': float(pings[node]) if node in pings else None
-        }
+        hilbert_values[node] = hilbert_val
+        recon_norm[node] = decoded_norm
+        recon_coords[node] = decoded_coord
 
-    # Print header
-    print(f"{'Node':<30} {'Orig-X':>10} {'Orig-Y':>10} {'Recon-X':>12} {'Recon-Y':>12} {'Hilbert-1D':>15}")
-    print("-" * 100)
+    # Define current node
+    current_node = "clab-century-serf1"
+    current_hilbert = hilbert_values[current_node]
 
-    for node, data in results.items():
-        x = data['coordinates']['x']
-        y = data['coordinates']['y']
-        rx = data['reconstructed_coords']['x']
-        ry = data['reconstructed_coords']['y']
-        hilbert = data['hilbert_index']
-        print(f"{node:<30} {x:10.6f} {y:10.6f} {rx:12.6f} {ry:12.6f} {hilbert:>15}")
+    print(f"\nCurrent Node: {current_node}\n")
 
-    with open('node_metrics.json', 'w') as f:
-        json.dump(results, f, indent=4)
+    # 1. RTT
+    print("1. Distance through Round Trip Time (ms):")
+    sorted_rtt = sorted(
+        [(n, rtt) for n, rtt in rtts.items() if n != current_node],
+        key=lambda x: x[1]
+    )
+    for node, rtt in sorted_rtt:
+        print(f"   {node:<25} => {rtt:.2f} ms")
+    print()
+
+    # 2. Ping
+    print("2. Distance through Ping:")
+    sorted_ping = sorted(
+        [(n, pings.get(n)) for n in coords if n != current_node],
+        key=lambda x: (float('inf') if x[1] is None else x[1])
+    )
+    for node, ping in sorted_ping:
+        if ping is None:
+            print(f"   {node:<25} => ping failed: exit status 1")
+        else:
+            print(f"   {node:<25} => {ping:.2f} ms")
+    print()
+
+    # 3. Hilbert Distance
+    print("3. Distance with Hilbert 1D Transform:")
+    sorted_hilbert = sorted(
+        [(n, abs(hilbert_values[n] - current_hilbert)) for n in coords if n != current_node],
+        key=lambda x: x[1]
+    )
+    for node, dist in sorted_hilbert:
+        hv = hilbert_values[node]
+        dn = recon_norm[node]
+        dc = recon_coords[node]
+        ox, oy = coords[node]
+        print(f"   {node:<25} => Hilbert1D: {hv:<10} HilbertDist: {dist:<10} "
+              f"Decoded(X,Y): ({dc[0]:.6f}, {dc[1]:.6f}) "
+              f"Original(X,Y): ({ox:.6f}, {oy:.6f})")
 
 if __name__ == "__main__":
     main()
