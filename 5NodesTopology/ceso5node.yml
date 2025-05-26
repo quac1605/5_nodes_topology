@@ -2,10 +2,20 @@ name: century
 
 topology:
   nodes:
-    central_switch:
-      kind: ceos
-      image: testing954/ceos:4.28.0F
+    switch1:
+      kind: ovs-bridge
+    
+    switch2:
+      kind: ovs-bridge
+    
+    router1:
+      kind: linux
+      image: quay.io/frrouting/frr:10.2.1
+      binds: 
+        - router1/daemons:/etc/frr/deamons
+        - router1/frr.conf:/etc/frr/frr.conf
 
+ # Nodes connected to switch1
     serf1:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
@@ -36,6 +46,8 @@ topology:
     serf10:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
+
+ # Nodes connected to switch2
     serf11:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
@@ -68,23 +80,28 @@ topology:
       image: anjummalik/ubuntu-with-serf-compatability
 
   links:
-    - endpoints: ["central_switch:eth1", "serf1:eth1"]
-    - endpoints: ["central_switch:eth2", "serf2:eth1"]
-    - endpoints: ["central_switch:eth3", "serf3:eth1"]
-    - endpoints: ["central_switch:eth4", "serf4:eth1"]
-    - endpoints: ["central_switch:eth5", "serf5:eth1"]
-    - endpoints: ["central_switch:eth6", "serf6:eth1"]
-    - endpoints: ["central_switch:eth7", "serf7:eth1"]
-    - endpoints: ["central_switch:eth8", "serf8:eth1"]
-    - endpoints: ["central_switch:eth9", "serf9:eth1"]
-    - endpoints: ["central_switch:eth10", "serf10:eth1"]
-    - endpoints: ["central_switch:eth11", "serf11:eth1"]
-    - endpoints: ["central_switch:eth12", "serf12:eth1"]
-    - endpoints: ["central_switch:eth13", "serf13:eth1"]
-    - endpoints: ["central_switch:eth14", "serf14:eth1"]
-    - endpoints: ["central_switch:eth15", "serf15:eth1"]
-    - endpoints: ["central_switch:eth16", "serf16:eth1"]
-    - endpoints: ["central_switch:eth17", "serf17:eth1"]
-    - endpoints: ["central_switch:eth18", "serf18:eth1"]
-    - endpoints: ["central_switch:eth19", "serf19:eth1"]
-    - endpoints: ["central_switch:eth20", "serf20:eth1"]
+  # Router to each switch
+    - endpoints: ["router1:eth1", "switch1:ovs1p1"]
+    - endpoints: ["router1:eth2", "switch2:ovs2p1"]
+  # Nodes to switch1
+    - endpoints: ["switch1:ovs1p2", "serf1:eth1"]
+    - endpoints: ["switch1:ovs1p3", "serf2:eth1"]
+    - endpoints: ["switch1:ovs1p4", "serf3:eth1"]
+    - endpoints: ["switch1:ovs1p5", "serf4:eth1"]
+    - endpoints: ["switch1:ovs1p6", "serf5:eth1"]
+    - endpoints: ["switch1:ovs1p7", "serf6:eth1"]
+    - endpoints: ["switch1:ovs1p8", "serf7:eth1"]
+    - endpoints: ["switch1:ovs1p9", "serf8:eth1"]
+    - endpoints: ["switch1:ovs1p10", "serf9:eth1"]
+    - endpoints: ["switch1:ovs1p11", "serf10:eth1"]
+  # Nodes to switch2
+    - endpoints: ["switch2:ovs2p2", "serf11:eth1"]
+    - endpoints: ["switch2:ovs2p3", "serf12:eth1"]
+    - endpoints: ["switch2:ovs2p4", "serf13:eth1"]
+    - endpoints: ["switch2:ovs2p5", "serf14:eth1"]
+    - endpoints: ["switch2:ovs2p6", "serf15:eth1"]
+    - endpoints: ["switch2:ovs2p7", "serf16:eth1"]
+    - endpoints: ["switch2:ovs2p8", "serf17:eth1"]
+    - endpoints: ["switch2:ovs2p9", "serf18:eth1"]
+    - endpoints: ["switch2:ovs2p10", "serf19:eth1"]
+    - endpoints: ["switch2:ovs2p11", "serf20:eth1"]
