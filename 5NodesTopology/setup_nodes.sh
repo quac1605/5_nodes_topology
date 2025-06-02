@@ -64,9 +64,9 @@ EOF
     echo "$container setup complete."
 
     # Set the netem delay based on node number (index i is 0-based)
-    delay=$(( (i + 1) * 5 ))
-    echo "Setting netem delay for $container to ${delay}ms..."
-    sudo containerlab tools netem set --node "$container" --interface eth1 --delay "${delay}ms"
+    # delay=$(( (i + 1) * 5 ))
+    # echo "Setting netem delay for $container to ${delay}ms..."
+    # sudo containerlab tools netem set --node "$container" --interface eth1 --delay "${delay}ms"
 
   done
 }
