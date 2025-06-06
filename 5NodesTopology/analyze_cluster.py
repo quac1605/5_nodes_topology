@@ -68,7 +68,7 @@ def parse_log(filename):
     return coordinates, rtts, pings
 
 def main():
-    filename = 'nodes_log.txt'
+    filename = './dist/nodes_log.txt'
     coords, rtts, pings = parse_log(filename)
     norm_coords, min_vals, max_vals = normalize_coordinates(coords, P)
     hilbert_curve = HilbertCurve(P, N)

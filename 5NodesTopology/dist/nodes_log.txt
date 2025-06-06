@@ -1,65 +1,65 @@
-2025/05/21 12:18:01 
---- Run at 2025-05-21 12:18:01 ---
-2025/05/21 12:18:01 [COORDINATES]
-2025/05/21 12:18:01 Node: clab-century-serf1        => X: -0.001814  Y: -0.005060  [CURRENT NODE]
-2025/05/21 12:18:01 Node: clab-century-serf12       => X: 0.010329  Y: -0.009899
-2025/05/21 12:18:01 Node: clab-century-serf15       => X: 0.001725  Y: 0.028406
-2025/05/21 12:18:01 Node: clab-century-serf16       => X: -0.004569  Y: 0.022058
-2025/05/21 12:18:01 Node: clab-century-serf6        => X: 0.004776  Y: -0.008033
-2025/05/21 12:18:01 Node: clab-century-serf5        => X: 0.000370  Y: -0.010801
-2025/05/21 12:18:01 Node: clab-century-serf11       => X: -0.013163  Y: 0.011136
-2025/05/21 12:18:01 Node: clab-century-serf18       => X: -0.016653  Y: 0.006952
-2025/05/21 12:18:01 Node: clab-century-serf4        => X: -0.003615  Y: -0.003905
-2025/05/21 12:18:01 Node: clab-century-serf3        => X: -0.004052  Y: -0.002042
-2025/05/21 12:18:01 Node: clab-century-serf7        => X: -0.003687  Y: -0.008690
-2025/05/21 12:18:01 Node: clab-century-serf13       => X: -0.002107  Y: -0.008617
-2025/05/21 12:18:01 Node: clab-century-serf2        => X: -0.002500  Y: -0.004081
-2025/05/21 12:18:01 Node: clab-century-serf8        => X: -0.017025  Y: 0.003572
-2025/05/21 12:18:01 Node: clab-century-serf9        => X: -0.004342  Y: -0.002112
-2025/05/21 12:18:01 Node: clab-century-serf10       => X: -0.003603  Y: -0.006491
-2025/05/21 12:18:01 Node: clab-century-serf14       => X: 0.001995  Y: -0.006137
-2025/05/21 12:18:01 Node: clab-century-serf17       => X: 0.021971  Y: -0.029437
-2025/05/21 12:18:01 Node: clab-century-serf19       => X: 0.011516  Y: 0.000813
-2025/05/21 12:18:01 Node: clab-century-serf20       => X: -0.057630  Y: -0.046411
-2025/05/21 12:18:01 
+2025/06/06 10:58:28 
+--- Run at 2025-06-06 10:58:28 ---
+2025/06/06 10:58:28 [COORDINATES]
+2025/06/06 10:58:28 Node: clab-century-serf1        => X: 0.009001  Y: -0.007707  [CURRENT NODE]
+2025/06/06 10:58:28 Node: clab-century-serf19       => X: -0.003105  Y: 0.020161
+2025/06/06 10:58:28 Node: clab-century-serf20       => X: -0.033858  Y: 0.023492
+2025/06/06 10:58:28 Node: clab-century-serf18       => X: -0.020287  Y: 0.007570
+2025/06/06 10:58:28 Node: clab-century-serf9        => X: 0.013944  Y: -0.015502
+2025/06/06 10:58:28 Node: clab-century-serf10       => X: 0.005705  Y: -0.004528
+2025/06/06 10:58:28 Node: clab-century-serf14       => X: -0.014926  Y: 0.013389
+2025/06/06 10:58:28 Node: clab-century-serf6        => X: 0.006037  Y: -0.007796
+2025/06/06 10:58:28 Node: clab-century-serf2        => X: 0.009079  Y: -0.006873
+2025/06/06 10:58:28 Node: clab-century-serf4        => X: 0.010754  Y: -0.008005
+2025/06/06 10:58:28 Node: clab-century-serf5        => X: 0.009749  Y: -0.006724
+2025/06/06 10:58:28 Node: clab-century-serf8        => X: 0.013959  Y: -0.006982
+2025/06/06 10:58:28 Node: clab-century-serf12       => X: -0.014504  Y: 0.013715
+2025/06/06 10:58:28 Node: clab-century-serf13       => X: -0.014064  Y: 0.012647
+2025/06/06 10:58:28 Node: clab-century-serf16       => X: -0.010357  Y: 0.012152
+2025/06/06 10:58:28 Node: clab-century-serf7        => X: 0.016077  Y: -0.007322
+2025/06/06 10:58:28 Node: clab-century-serf11       => X: -0.013529  Y: 0.012949
+2025/06/06 10:58:28 Node: clab-century-serf15       => X: -0.013217  Y: 0.013167
+2025/06/06 10:58:28 Node: clab-century-serf17       => X: -0.014263  Y: 0.013507
+2025/06/06 10:58:28 Node: clab-century-serf3        => X: 0.009354  Y: -0.006787
+2025/06/06 10:58:28 
 [RTT]
-2025/05/21 12:18:01 Node: clab-century-serf2        => RTT: 16.56 ms
-2025/05/21 12:18:01 Node: clab-century-serf3        => RTT: 26.31 ms
-2025/05/21 12:18:01 Node: clab-century-serf4        => RTT: 34.34 ms
-2025/05/21 12:18:01 Node: clab-century-serf6        => RTT: 37.42 ms
-2025/05/21 12:18:01 Node: clab-century-serf5        => RTT: 47.29 ms
-2025/05/21 12:18:01 Node: clab-century-serf9        => RTT: 54.06 ms
-2025/05/21 12:18:01 Node: clab-century-serf8        => RTT: 55.73 ms
-2025/05/21 12:18:01 Node: clab-century-serf7        => RTT: 60.88 ms
-2025/05/21 12:18:01 Node: clab-century-serf11       => RTT: 73.63 ms
-2025/05/21 12:18:01 Node: clab-century-serf10       => RTT: 77.82 ms
-2025/05/21 12:18:01 Node: clab-century-serf12       => RTT: 80.12 ms
-2025/05/21 12:18:01 Node: clab-century-serf14       => RTT: 81.80 ms
-2025/05/21 12:18:01 Node: clab-century-serf13       => RTT: 82.85 ms
-2025/05/21 12:18:01 Node: clab-century-serf15       => RTT: 98.50 ms
-2025/05/21 12:18:01 Node: clab-century-serf16       => RTT: 99.87 ms
-2025/05/21 12:18:01 Node: clab-century-serf17       => RTT: 111.41 ms
-2025/05/21 12:18:01 Node: clab-century-serf18       => RTT: 113.32 ms
-2025/05/21 12:18:01 Node: clab-century-serf19       => RTT: 124.15 ms
-2025/05/21 12:18:01 Node: clab-century-serf20       => RTT: 126.42 ms
-2025/05/21 12:18:01 
+2025/06/06 10:58:28 Node: clab-century-serf2        => RTT: 12.14 ms
+2025/06/06 10:58:28 Node: clab-century-serf4        => RTT: 12.21 ms
+2025/06/06 10:58:28 Node: clab-century-serf3        => RTT: 18.21 ms
+2025/06/06 10:58:28 Node: clab-century-serf6        => RTT: 20.66 ms
+2025/06/06 10:58:28 Node: clab-century-serf5        => RTT: 22.99 ms
+2025/06/06 10:58:28 Node: clab-century-serf8        => RTT: 23.46 ms
+2025/06/06 10:58:28 Node: clab-century-serf7        => RTT: 24.81 ms
+2025/06/06 10:58:28 Node: clab-century-serf9        => RTT: 26.55 ms
+2025/06/06 10:58:28 Node: clab-century-serf10       => RTT: 30.36 ms
+2025/06/06 10:58:28 Node: clab-century-serf11       => RTT: 112.35 ms
+2025/06/06 10:58:28 Node: clab-century-serf12       => RTT: 114.08 ms
+2025/06/06 10:58:28 Node: clab-century-serf13       => RTT: 116.69 ms
+2025/06/06 10:58:28 Node: clab-century-serf14       => RTT: 117.69 ms
+2025/06/06 10:58:28 Node: clab-century-serf15       => RTT: 120.10 ms
+2025/06/06 10:58:28 Node: clab-century-serf16       => RTT: 121.41 ms
+2025/06/06 10:58:28 Node: clab-century-serf17       => RTT: 124.27 ms
+2025/06/06 10:58:28 Node: clab-century-serf18       => RTT: 125.45 ms
+2025/06/06 10:58:28 Node: clab-century-serf19       => RTT: 127.71 ms
+2025/06/06 10:58:28 Node: clab-century-serf20       => RTT: 128.51 ms
+2025/06/06 10:58:28 
 [PING]
-2025/05/21 12:18:01 Node: clab-century-serf2        => Ping: time=29.0 ms
-2025/05/21 12:18:01 Node: clab-century-serf4        => Ping: time=37.2 ms
-2025/05/21 12:18:01 Node: clab-century-serf5        => Ping: time=42.3 ms
-2025/05/21 12:18:01 Node: clab-century-serf3        => Ping: time=49.0 ms
-2025/05/21 12:18:01 Node: clab-century-serf8        => Ping: time=54.7 ms
-2025/05/21 12:18:01 Node: clab-century-serf6        => Ping: time=55.3 ms
-2025/05/21 12:18:01 Node: clab-century-serf7        => Ping: time=55.7 ms
-2025/05/21 12:18:01 Node: clab-century-serf9        => Ping: time=62.2 ms
-2025/05/21 12:18:01 Node: clab-century-serf10       => Ping: time=63.2 ms
-2025/05/21 12:18:01 Node: clab-century-serf11       => Ping: time=71.6 ms
-2025/05/21 12:18:01 Node: clab-century-serf14       => Ping: time=85.3 ms
-2025/05/21 12:18:01 Node: clab-century-serf13       => Ping: time=85.7 ms
-2025/05/21 12:18:01 Node: clab-century-serf12       => Ping: time=85.8 ms
-2025/05/21 12:18:01 Node: clab-century-serf15       => Ping: time=91.0 ms
-2025/05/21 12:18:01 Node: clab-century-serf16       => Ping: time=97.6 ms
-2025/05/21 12:18:01 Node: clab-century-serf17       => Ping: time=98.6 ms
-2025/05/21 12:18:01 Node: clab-century-serf18       => Ping: time=107 ms
-2025/05/21 12:18:01 Node: clab-century-serf19       => Ping: time=111 ms
-2025/05/21 12:18:01 Node: clab-century-serf20       => Ping: time=115 ms
+2025/06/06 10:58:28 Node: clab-century-serf2        => Ping: time=10.1 ms
+2025/06/06 10:58:28 Node: clab-century-serf3        => Ping: time=12.5 ms
+2025/06/06 10:58:28 Node: clab-century-serf4        => Ping: time=14.2 ms
+2025/06/06 10:58:28 Node: clab-century-serf5        => Ping: time=16.1 ms
+2025/06/06 10:58:28 Node: clab-century-serf6        => Ping: time=18.1 ms
+2025/06/06 10:58:28 Node: clab-century-serf7        => Ping: time=20.2 ms
+2025/06/06 10:58:28 Node: clab-century-serf8        => Ping: time=22.1 ms
+2025/06/06 10:58:28 Node: clab-century-serf9        => Ping: time=24.2 ms
+2025/06/06 10:58:28 Node: clab-century-serf10       => Ping: time=26.1 ms
+2025/06/06 10:58:28 Node: clab-century-serf11       => Ping: time=108 ms
+2025/06/06 10:58:28 Node: clab-century-serf12       => Ping: time=111 ms
+2025/06/06 10:58:28 Node: clab-century-serf13       => Ping: time=113 ms
+2025/06/06 10:58:28 Node: clab-century-serf14       => Ping: time=115 ms
+2025/06/06 10:58:28 Node: clab-century-serf15       => Ping: time=117 ms
+2025/06/06 10:58:28 Node: clab-century-serf16       => Ping: time=119 ms
+2025/06/06 10:58:28 Node: clab-century-serf17       => Ping: time=121 ms
+2025/06/06 10:58:28 Node: clab-century-serf18       => Ping: time=123 ms
+2025/06/06 10:58:28 Node: clab-century-serf19       => Ping: time=125 ms
+2025/06/06 10:58:28 Node: clab-century-serf20       => Ping: time=127 ms
