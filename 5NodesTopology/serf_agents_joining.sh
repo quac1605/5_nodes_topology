@@ -5,7 +5,7 @@ joining_node="clab-century-serf1"
 
 # List of containers (Ubuntu nodes from 2 to 100)
 containers=()
-for i in {2..20}; do
+for i in {2..26}; do
   containers+=(clab-century-serf$i)
 done
 

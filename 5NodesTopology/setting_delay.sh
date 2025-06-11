@@ -13,7 +13,7 @@ set_tc_delay() {
 set_tc_delay ovs1p1 25ms
 set_tc_delay ovs2p1 25ms
 
-for i in {2..11}; do
+for i in {2..14}; do
   set_tc_delay ovs1p$i ${i}ms
   set_tc_delay ovs2p$i ${i}ms
 done
@@ -23,10 +23,10 @@ echo "Applying containerlab netem delays..."
 sudo containerlab tools netem set --node clab-century-router1 --interface eth1 --delay 25ms
 sudo containerlab tools netem set --node clab-century-router1 --interface eth2 --delay 25ms
 
-for i in {1..10}; do
+for i in {1..13}; do
   sudo containerlab tools netem set --node clab-century-serf$i --interface eth1 --delay $((i+1))ms
 done
 
-for i in {11..20}; do
-  sudo containerlab tools netem set --node clab-century-serf$i --interface eth1 --delay $((i-9))ms
+for i in {14..26}; do
+  sudo containerlab tools netem set --node clab-century-serf$i --interface eth1 --delay $((i-12))ms
 done

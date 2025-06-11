@@ -46,8 +46,6 @@ topology:
     serf10:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-
- # Nodes connected to switch2
     serf11:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
@@ -57,6 +55,7 @@ topology:
     serf13:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
+ # Nodes connected to switch2
     serf14:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
@@ -78,7 +77,24 @@ topology:
     serf20:
       kind: linux
       image: anjummalik/ubuntu-with-serf-compatability
-
+    serf21:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf22:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf23:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf24:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf25:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
+    serf26:
+      kind: linux
+      image: anjummalik/ubuntu-with-serf-compatability
   links:
   # Router to each switch
     - endpoints: ["router1:eth1", "switch1:ovs1p1"]
@@ -94,14 +110,21 @@ topology:
     - endpoints: ["switch1:ovs1p9", "serf8:eth1"]
     - endpoints: ["switch1:ovs1p10", "serf9:eth1"]
     - endpoints: ["switch1:ovs1p11", "serf10:eth1"]
+    - endpoints: ["switch1:ovs1p12", "serf11:eth1"]
+    - endpoints: ["switch1:ovs1p13", "serf12:eth1"]
+    - endpoints: ["switch1:ovs1p14", "serf13:eth1"]
   # Nodes to switch2
-    - endpoints: ["switch2:ovs2p2", "serf11:eth1"]
-    - endpoints: ["switch2:ovs2p3", "serf12:eth1"]
-    - endpoints: ["switch2:ovs2p4", "serf13:eth1"]
-    - endpoints: ["switch2:ovs2p5", "serf14:eth1"]
-    - endpoints: ["switch2:ovs2p6", "serf15:eth1"]
-    - endpoints: ["switch2:ovs2p7", "serf16:eth1"]
-    - endpoints: ["switch2:ovs2p8", "serf17:eth1"]
-    - endpoints: ["switch2:ovs2p9", "serf18:eth1"]
-    - endpoints: ["switch2:ovs2p10", "serf19:eth1"]
-    - endpoints: ["switch2:ovs2p11", "serf20:eth1"]
+    - endpoints: ["switch2:ovs2p2", "serf14:eth1"]
+    - endpoints: ["switch2:ovs2p3", "serf15:eth1"]
+    - endpoints: ["switch2:ovs2p4", "serf16:eth1"]
+    - endpoints: ["switch2:ovs2p5", "serf17:eth1"]
+    - endpoints: ["switch2:ovs2p6", "serf18:eth1"]
+    - endpoints: ["switch2:ovs2p7", "serf19:eth1"]
+    - endpoints: ["switch2:ovs2p8", "serf20:eth1"]
+    - endpoints: ["switch2:ovs2p9", "serf21:eth1"]
+    - endpoints: ["switch2:ovs2p10", "serf22:eth1"]
+    - endpoints: ["switch2:ovs2p11", "serf23:eth1"]
+    - endpoints: ["switch2:ovs2p12", "serf24:eth1"]
+    - endpoints: ["switch2:ovs2p13", "serf25:eth1"]
+    - endpoints: ["switch2:ovs2p14", "serf26:eth1"]
+    
