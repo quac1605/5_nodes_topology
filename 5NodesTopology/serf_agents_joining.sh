@@ -30,7 +30,7 @@ if [[ ${#ip_addresses[@]} -eq 0 ]]; then
 fi
 
 # Join all nodes together using the 'serf join' command
-join_command="/opt/serfapp/serf join ${ip_addresses[*]}"
+join_command="/opt/serfapp/serf1 join ${ip_addresses[*]}"
 echo "Joining the cluster from $joining_node with the following command:"
 echo "$join_command"
 

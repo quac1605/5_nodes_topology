@@ -81,7 +81,7 @@ while true; do
         echo ""
         echo "RTT TEST:"
         # Serf RTT test
-        rtt_result=$(./serf rtt clab-century-serf1 $node_name 2>&1)
+        rtt_result=$(./serf1 rtt clab-century-serf1 $node_name 2>&1)
         rtt_status=$?
         
         if [ $rtt_status -eq 0 ]; then

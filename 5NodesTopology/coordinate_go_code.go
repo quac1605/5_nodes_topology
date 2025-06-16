@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/hilbert"
 	"github.com/hashicorp/serf/client"
-	"github.com/hashicorp/serf/coordinate"
 )
 
 const hilbertOrder = 16
@@ -41,9 +40,9 @@ var nodeIPs = map[string]string{
 	"clab-century-serf8":  "10.0.1.18",
 	"clab-century-serf9":  "10.0.1.19",
 	"clab-century-serf10": "10.0.1.20",
-	"clab-century-serf11": "10.0.2.21",
-	"clab-century-serf12": "10.0.2.22",
-	"clab-century-serf13": "10.0.2.23",
+	"clab-century-serf11": "10.0.1.21",
+	"clab-century-serf12": "10.0.1.22",
+	"clab-century-serf13": "10.0.1.23",
 	"clab-century-serf14": "10.0.2.24",
 	"clab-century-serf15": "10.0.2.25",
 	"clab-century-serf16": "10.0.2.26",
@@ -51,6 +50,12 @@ var nodeIPs = map[string]string{
 	"clab-century-serf18": "10.0.2.28",
 	"clab-century-serf19": "10.0.2.29",
 	"clab-century-serf20": "10.0.2.30",
+	"clab-century-serf21": "10.0.2.31",
+	"clab-century-serf22": "10.0.2.32",
+	"clab-century-serf23": "10.0.2.33",
+	"clab-century-serf24": "10.0.2.34",
+	"clab-century-serf25": "10.0.2.35",
+	"clab-century-serf26": "10.0.2.36",
 }
 
 func normalizeAndScale(value, min, max float64) uint32 {
@@ -100,21 +105,29 @@ func DecodeHilbertValue(hilbertVal uint64, minX, maxX, minY, maxY float64) (floa
 	return denormalize(xInt, minX, maxX), denormalize(yInt, minY, maxY)
 }
 
-func calculateRTT(a, b *coordinate.Coordinate) float64 {
-	if len(a.Vec) != len(b.Vec) {
-		panic("coordinate dimensions do not match")
+func getRTTFromCommand(source, target string) (float64, error) {
+	cmd := exec.Command("./serf1", "rtt", source, target)
+	output, err := cmd.Output()
+	if err != nil {
+		return -1, fmt.Errorf("failed to run serf_og rtt command: %w", err)
 	}
-	sumsq := 0.0
-	for i := 0; i < len(a.Vec); i++ {
-		diff := a.Vec[i] - b.Vec[i]
-		sumsq += diff * diff
+
+	// Example output: "Estimated clab-century-serf1 <-> clab-century-serf2 rtt: 10.381 ms"
+	line := strings.TrimSpace(string(output))
+	parts := strings.Split(line, "rtt:")
+	if len(parts) < 2 {
+		return -1, fmt.Errorf("unexpected output format: %s", line)
 	}
-	rtt := math.Sqrt(sumsq) + a.Height + b.Height
-	adjusted := rtt + a.Adjustment + b.Adjustment
-	if adjusted > 0.0 {
-		rtt = adjusted
+
+	rttStr := strings.TrimSpace(parts[1])
+	rttStr = strings.TrimSuffix(rttStr, " ms")
+
+	rttVal, err := strconv.ParseFloat(rttStr, 64)
+	if err != nil {
+		return -1, fmt.Errorf("failed to parse RTT value: %w", err)
 	}
-	return rtt * 1000 // ms
+
+	return rttVal, nil
 }
 
 func ping(ip string) (string, float64) {
@@ -205,8 +218,12 @@ func main() {
 		if node.Name == thisNode.Name {
 			continue
 		}
-		coord, _ := serfClient.GetCoordinate(node.Name)
-		node.RTT = calculateRTT(thisCoord, coord)
+		rttVal, err := getRTTFromCommand(thisNode.Name, node.Name)
+		if err != nil {
+			log.Printf("Warning: could not get RTT from command for %s: %v", node.Name, err)
+			rttVal = -1
+		}
+		node.RTT = rttVal
 		node.HilbertDist = math.Abs(float64(node.Hilbert1D) - float64(thisNode.Hilbert1D))
 		ip := nodeIPs[node.Name]
 		node.PingResult, node.PingRTT = ping(ip)
