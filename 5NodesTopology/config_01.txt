@@ -1,0 +1,8 @@
+PushPullInterval:        30 * time.Second,       // Low frequency
+		ProbeTimeout:            500 * time.Millisecond, // Reasonable RTT time for LAN
+		ProbeInterval:           1 * time.Millisecond,        // Failure check every second
+		DisableTcpPings:         false,                  // TCP pings are safe, even with mixed versions
+		AwarenessMaxMultiplier:  8,                      // Probe interval backs off to 8 seconds
+
+		GossipNodes:          3,                      // Gossip to 3 nodes
+		GossipInterval:       200 * time.Millisecond,

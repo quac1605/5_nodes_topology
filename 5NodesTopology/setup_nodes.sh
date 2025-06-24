@@ -8,7 +8,7 @@ done
 
 # Paths and file names
 json_file="node.json"
-binary_file="serf1"  # Use the full path to the serf binary if needed
+binary_file="serf_2406"  # Use the full path to the serf binary if needed
 destination_dir="/opt/serfapp"
 
 # Function to set up Ubuntu nodes

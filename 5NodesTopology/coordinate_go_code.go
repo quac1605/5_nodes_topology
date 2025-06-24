@@ -191,8 +191,6 @@ func main() {
 		log.Fatalf("Could not determine the current node")
 	}
 
-	thisCoord, _ := serfClient.GetCoordinate(currentNode)
-
 	minX, maxX := math.MaxFloat64, -math.MaxFloat64
 	minY, maxY := math.MaxFloat64, -math.MaxFloat64
 	for _, node := range nodes {

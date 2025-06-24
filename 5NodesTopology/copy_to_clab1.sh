@@ -1,6 +1,6 @@
 #!/bin/bash
 
-FILES=("coordinate_ping_RTT_printcode" "checking_ping_rtt_with_cmd.sh" "coordinate_go_code" "code_go_jte")
+FILES=("coordinate_ping_RTT_printcode" "1node_monitor.sh" "checking_ping_rtt_with_cmd.sh" "coordinate_go_code" "code_go_jte")
 
 # Loop through container names clab-century-serf1 to clab-century-serf5
 for i in {1..26}; do
