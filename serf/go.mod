@@ -26,7 +26,6 @@ require (
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
-	github.com/hashicorp/go-metrics v0.5.4 // indirect
 	github.com/hashicorp/go-multierror v1.0.0 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.5 // indirect
 	github.com/hashicorp/go-uuid v1.0.1 // indirect
@@ -48,5 +47,3 @@ require (
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 )
-
-replace github.com/hashicorp/memberlist => github.com/quac1605/memberlist v0.5.2-modified

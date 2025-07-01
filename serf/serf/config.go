@@ -296,12 +296,6 @@ func DefaultConfig() *Config {
 	if err != nil {
 		panic(err)
 	}
-	
-    memberlistConfig := memberlist.DefaultLANConfig()
-    memberlistConfig.GossipInterval = 20 * time.Second  // Adjust gossip interval
-    memberlistConfig.GossipNodes = 2                          // Number of nodes to gossip with
-    memberlistConfig.PushPullInterval = 100 * time.Second      // Push-pull sync interval
-    memberlistConfig.RetransmitMult = 2                   // Retransmit multiplier
 
 	return &Config{
 		NodeName:                     hostname,
@@ -329,5 +323,4 @@ func DefaultConfig() *Config {
 		ValidateNodeNames:            false,
 		UserEventSizeLimit:           512,
 	}
-	
 }

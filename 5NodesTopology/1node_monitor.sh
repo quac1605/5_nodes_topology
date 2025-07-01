@@ -53,7 +53,7 @@ echo ""
 while true; do
     echo "RTT TEST [$src_node ➝ $dst_node]:"
     
-    rtt_result=$(./serf_2406 rtt "$src_node" "$dst_node")
+    rtt_result=$(./serf_0107 rtt "$src_node" "$dst_node")
     rtt_status=$?
     
     if [ $rtt_status -eq 0 ]; then

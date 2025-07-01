@@ -1,11 +1,24 @@
 import re
-import json
+import subprocess
 import numpy as np
+import time
 from hilbertcurve.hilbertcurve import HilbertCurve
 
 # Hilbert Curve config
 P = 16  # precision
-N = 2   # dimensions
+N = 5   # dimensions
+
+def copy_log_from_container(container_name, container_path, host_path):
+    try:
+        subprocess.run(
+            ["docker", "cp", f"{container_name}:{container_path}", host_path],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Error copying file from Docker container: {e}")
+        exit(1)
 
 def normalize_coordinates(coords, bits):
     coords_array = np.array(list(coords.values()))
@@ -29,18 +42,15 @@ def parse_log(filename):
 
     coordinates = {}
     rtts = {}
-    pings = {}
     current_section = None
 
     for line in lines:
         line = line.strip()
 
-        if '[COORDINATES]' in line:
+        if '[COORDINATES + RESOURCES]' in line:
             current_section = 'coordinates'
         elif '[RTT]' in line:
             current_section = 'rtt'
-        elif '[PING]' in line:
-            current_section = 'ping'
         elif 'Node:' in line:
             match = re.match(r'.*Node: (\S+)\s+=> (.+)', line)
             if not match:
@@ -48,28 +58,36 @@ def parse_log(filename):
             node, data = match.groups()
 
             if current_section == 'coordinates':
-                coord_match = re.findall(r'X:\s*([-\d.]+)\s*Y:\s*([-\d.]+)', data)
-                if coord_match:
-                    x, y = map(float, coord_match[0])
-                    coordinates[node] = (x, y)
+                match = re.search(
+                    r'X:\s*([-\d.]+)\s*Y:\s*([-\d.]+)\s*Z:\s*([-\d.]+)\s*RAM:\s*(\d+)GB\s*vCores:\s*(\d+)',
+                    data
+                )
+                if match:
+                    x, y, z, ram, vcores = match.groups()
+                    coordinates[node] = (
+                        float(x), float(y), float(z), int(ram), int(vcores)
+                    )
 
             elif current_section == 'rtt':
                 rtt_match = re.search(r'RTT:\s*([\d.]+)\s*ms', data)
                 if rtt_match:
                     rtts[node] = float(rtt_match.group(1))
 
-            elif current_section == 'ping':
-                ping_match = re.search(r'time=([\d.]+)\s*ms', data)
-                if ping_match:
-                    pings[node] = float(ping_match.group(1))
-                else:
-                    pings[node] = None  # represents failed ping
+    return coordinates, rtts
 
-    return coordinates, rtts, pings
+def process():
+    container_name = "clab-century-serf1"
+    container_path = "/opt/serfapp/nodes_log.txt"
+    host_path = "./dist/nodes_log.txt"
 
-def main():
-    filename = './dist/nodes_log.txt'
-    coords, rtts, pings = parse_log(filename)
+    copy_log_from_container(container_name, container_path, host_path)
+
+    coords, rtts = parse_log(host_path)
+
+    if not coords:
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ No coordinate data found in the log file. Skipping this run.")
+        return
+
     norm_coords, min_vals, max_vals = normalize_coordinates(coords, P)
     hilbert_curve = HilbertCurve(P, N)
 
@@ -87,13 +105,17 @@ def main():
         recon_norm[node] = decoded_norm
         recon_coords[node] = decoded_coord
 
-    # Define current node
     current_node = "clab-century-serf1"
+    if current_node not in hilbert_values:
+        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ Current node data not found in parsed coordinates.")
+        return
+
     current_hilbert = hilbert_values[current_node]
 
-    print(f"\nCurrent Node: {current_node}\n")
+    print(f"\n--- Run at {time.strftime('%H:%M:%S')} ---")
+    print(f"Current Node: {current_node}\n")
 
-    # 1. RTT
+    # RTT Distance
     print("1. Distance through Round Trip Time (ms):")
     sorted_rtt = sorted(
         [(n, rtt) for n, rtt in rtts.items() if n != current_node],
@@ -103,21 +125,8 @@ def main():
         print(f"   {node:<25} => {rtt:.2f} ms")
     print()
 
-    # 2. Ping
-    print("2. Distance through Ping:")
-    sorted_ping = sorted(
-        [(n, pings.get(n)) for n in coords if n != current_node],
-        key=lambda x: (float('inf') if x[1] is None else x[1])
-    )
-    for node, ping in sorted_ping:
-        if ping is None:
-            print(f"   {node:<25} => ping failed: exit status 1")
-        else:
-            print(f"   {node:<25} => {ping:.2f} ms")
-    print()
-
-    # 3. Hilbert Distance
-    print("3. Distance with Hilbert 1D Transform:")
+    # Hilbert Distance
+    print("2. Distance with Hilbert 1D Transform:")
     sorted_hilbert = sorted(
         [(n, abs(hilbert_values[n] - current_hilbert)) for n in coords if n != current_node],
         key=lambda x: x[1]
@@ -126,10 +135,18 @@ def main():
         hv = hilbert_values[node]
         dn = recon_norm[node]
         dc = recon_coords[node]
-        ox, oy = coords[node]
-        print(f"   {node:<25} => Hilbert1D: {hv:<10} HilbertDist: {dist:<10} "
-              f"Decoded(X,Y): ({dc[0]:.6f}, {dc[1]:.6f}) "
-              f"Original(X,Y): ({ox:.6f}, {oy:.6f})")
+        ox, oy, oz, ram, cores = coords[node]
+        print(
+            f"   {node:<25} => Hilbert1D: {hv:<10} HilbertDist: {dist:<10} "
+            f"Decoded(X,Y,Z,RAM,vCores): ({dc[0]:.6f}, {dc[1]:.6f}, {dc[2]:.6f}, {dc[3]:.2f}, {dc[4]:.2f}) "
+            f"Original: ({ox:.6f}, {oy:.6f}, {oz:.6f}, {ram}, {cores})"
+        )
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        while True:
+            process()
+            time.sleep(3.5)
+    except KeyboardInterrupt:
+        print("\nStopped by user.")

@@ -23,6 +23,7 @@ type Node struct {
 	Name        string
 	X           float64
 	Y           float64
+	Z           float64
 	Hilbert1D   uint64
 	RTT         float64
 	PingRTT     float64

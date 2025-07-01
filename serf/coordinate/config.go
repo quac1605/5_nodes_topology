@@ -3,9 +3,7 @@
 
 package coordinate
 
-import (
-	"github.com/armon/go-metrics"
-)
+import "github.com/armon/go-metrics"
 
 // Config is used to set the parameters of the Vivaldi-based coordinate mapping
 // algorithm.
@@ -73,13 +71,13 @@ type Config struct {
 // basic testing of the algorithm, but not tuned to any particular type of cluster.
 func DefaultConfig() *Config {
 	return &Config{
-		Dimensionality:       2,
-		VivaldiErrorMax:      1.5,
-		VivaldiCE:            0.25,
-		VivaldiCC:            0.25,
-		AdjustmentWindowSize: 20,
-		HeightMin:            10.0e-6,
-		LatencyFilterSize:    3,
+		Dimensionality:       3,
+		VivaldiErrorMax:      1.0,
+		VivaldiCE:            0.1,
+		VivaldiCC:            0.1,
+		AdjustmentWindowSize: 40,
+		HeightMin:            1.0e-6,
+		LatencyFilterSize:    20,
 		GravityRho:           150.0,
 	}
 }

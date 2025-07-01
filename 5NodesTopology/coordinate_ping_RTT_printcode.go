@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -15,51 +14,54 @@ import (
 )
 
 type Node struct {
-	Name       string
-	X          float64
-	Y          float64
-	RTT        float64
-	PingRTT    float64
-	PingResult string
+	Name   string
+	X      float64
+	Y      float64
+	Z      float64
+	RTT    float64
+	RAM    string
+	Vcores int
 }
 
-var nodeIPs = map[string]string{
-	"clab-century-serf1":  "10.0.1.11",
-	"clab-century-serf2":  "10.0.1.12",
-	"clab-century-serf3":  "10.0.1.13",
-	"clab-century-serf4":  "10.0.1.14",
-	"clab-century-serf5":  "10.0.1.15",
-	"clab-century-serf6":  "10.0.1.16",
-	"clab-century-serf7":  "10.0.1.17",
-	"clab-century-serf8":  "10.0.1.18",
-	"clab-century-serf9":  "10.0.1.19",
-	"clab-century-serf10": "10.0.1.20",
-	"clab-century-serf11": "10.0.1.21",
-	"clab-century-serf12": "10.0.1.22",
-	"clab-century-serf13": "10.0.1.23",
-	"clab-century-serf14": "10.0.2.24",
-	"clab-century-serf15": "10.0.2.25",
-	"clab-century-serf16": "10.0.2.26",
-	"clab-century-serf17": "10.0.2.27",
-	"clab-century-serf18": "10.0.2.28",
-	"clab-century-serf19": "10.0.2.29",
-	"clab-century-serf20": "10.0.2.30",
-	"clab-century-serf21": "10.0.2.31",
-	"clab-century-serf22": "10.0.2.32",
-	"clab-century-serf23": "10.0.2.33",
-	"clab-century-serf24": "10.0.2.34",
-	"clab-century-serf25": "10.0.2.35",
-	"clab-century-serf26": "10.0.2.36",
+var nodeResources = map[string]struct {
+	RAM    string
+	Vcores int
+}{
+	"clab-century-serf1":  {RAM: "16GB", Vcores: 4},
+	"clab-century-serf2":  {RAM: "32GB", Vcores: 8},
+	"clab-century-serf3":  {RAM: "8GB", Vcores: 2},
+	"clab-century-serf4":  {RAM: "64GB", Vcores: 12},
+	"clab-century-serf5":  {RAM: "16GB", Vcores: 6},
+	"clab-century-serf6":  {RAM: "32GB", Vcores: 10},
+	"clab-century-serf7":  {RAM: "8GB", Vcores: 2},
+	"clab-century-serf8":  {RAM: "64GB", Vcores: 16},
+	"clab-century-serf9":  {RAM: "16GB", Vcores: 4},
+	"clab-century-serf10": {RAM: "32GB", Vcores: 6},
+	"clab-century-serf11": {RAM: "8GB", Vcores: 2},
+	"clab-century-serf12": {RAM: "64GB", Vcores: 14},
+	"clab-century-serf13": {RAM: "16GB", Vcores: 4},
+	"clab-century-serf14": {RAM: "32GB", Vcores: 8},
+	"clab-century-serf15": {RAM: "8GB", Vcores: 2},
+	"clab-century-serf16": {RAM: "64GB", Vcores: 12},
+	"clab-century-serf17": {RAM: "16GB", Vcores: 6},
+	"clab-century-serf18": {RAM: "32GB", Vcores: 8},
+	"clab-century-serf19": {RAM: "8GB", Vcores: 2},
+	"clab-century-serf20": {RAM: "64GB", Vcores: 16},
+	"clab-century-serf21": {RAM: "16GB", Vcores: 6},
+	"clab-century-serf22": {RAM: "32GB", Vcores: 10},
+	"clab-century-serf23": {RAM: "8GB", Vcores: 2},
+	"clab-century-serf24": {RAM: "64GB", Vcores: 14},
+	"clab-century-serf25": {RAM: "16GB", Vcores: 4},
+	"clab-century-serf26": {RAM: "32GB", Vcores: 6},
 }
 
 func getRTTFromCommand(source, target string) (float64, error) {
-	cmd := exec.Command("./serf1", "rtt", source, target)
+	cmd := exec.Command("./serf_0107", "rtt", source, target)
 	output, err := cmd.Output()
 	if err != nil {
 		return -1, fmt.Errorf("failed to run serf_og rtt command: %w", err)
 	}
 
-	// Example output: "Estimated clab-century-serf1 <-> clab-century-serf2 rtt: 10.381 ms"
 	line := strings.TrimSpace(string(output))
 	parts := strings.Split(line, "rtt:")
 	if len(parts) < 2 {
@@ -75,31 +77,6 @@ func getRTTFromCommand(source, target string) (float64, error) {
 	}
 
 	return rttVal, nil
-}
-
-func ping(ip string) (string, float64) {
-	cmd := exec.Command("ping", "-c", "1", "-w", "2", ip)
-	output, err := cmd.Output()
-	if err != nil {
-		return fmt.Sprintf("ping failed: %v", err), -1
-	}
-	return parsePingOutput(string(output))
-}
-
-func parsePingOutput(output string) (string, float64) {
-	scanner := bufio.NewScanner(strings.NewReader(output))
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "time=") {
-			timeStr := line[strings.Index(line, "time=")+5:]
-			timeStr = strings.TrimSpace(timeStr)
-			timeStr = strings.Split(timeStr, " ")[0]
-			if ms, err := strconv.ParseFloat(timeStr, 64); err == nil {
-				return "time=" + timeStr + " ms", ms
-			}
-		}
-	}
-	return "No RTT found", -1
 }
 
 func logAndPrint(logger *log.Logger, format string, v ...any) {
@@ -118,7 +95,6 @@ func main() {
 	hostname, _ := os.Hostname()
 
 	for {
-		// Overwrite log file on each iteration
 		logFile, err := os.Create("nodes_log.txt")
 		if err != nil {
 			log.Fatalf("Could not create log file: %v", err)
@@ -144,10 +120,16 @@ func main() {
 			if err != nil || coord == nil {
 				continue
 			}
+
+			res := nodeResources[member.Name]
+
 			nodes = append(nodes, Node{
-				Name: member.Name,
-				X:    coord.Vec[0],
-				Y:    coord.Vec[1],
+				Name:   member.Name,
+				X:      coord.Vec[0],
+				Y:      coord.Vec[1],
+				Z:      coord.Vec[2],
+				RAM:    res.RAM,
+				Vcores: res.Vcores,
 			})
 		}
 
@@ -165,21 +147,29 @@ func main() {
 			if nodes[i].Name == currentNode {
 				continue
 			}
-			coord, _ := serfClient.GetCoordinate(nodes[i].Name)
-			nodes[i].RTT = getRTTFromCommand(currentNode, nodes[i].Name)
-			ip := nodeIPs[nodes[i].Name]
-			nodes[i].PingResult, nodes[i].PingRTT = ping(ip)
+
+			rtt, err := getRTTFromCommand(currentNode, nodes[i].Name)
+			if err != nil {
+				logAndPrint(logger, "RTT error for %s: %v\n", nodes[i].Name, err)
+				rtt = -1
+			}
+			nodes[i].RTT = rtt
+
 			filtered = append(filtered, nodes[i])
 		}
 
 		timestamp := time.Now().Format("2006-01-02 15:04:05")
 		logAndPrint(logger, "\n--- Run at %s ---\n", timestamp)
 
-		// Coordinates
-		logAndPrint(logger, "[COORDINATES]\n")
-		logAndPrint(logger, "Node: %-25s => X: %.6f  Y: %.6f  [CURRENT NODE]\n", currentNode, thisCoord.Vec[0], thisCoord.Vec[1])
+		// Coordinates + Resources
+		logAndPrint(logger, "[COORDINATES + RESOURCES]\n")
+		logAndPrint(logger, "Node: %-25s => X: %.6f  Y: %.6f  Z: %.6f  RAM: %-5s  vCores: %d   [CURRENT NODE]\n",
+			currentNode, thisCoord.Vec[0], thisCoord.Vec[1], thisCoord.Vec[2],
+			nodeResources[currentNode].RAM, nodeResources[currentNode].Vcores)
+
 		for _, n := range filtered {
-			logAndPrint(logger, "Node: %-25s => X: %.6f  Y: %.6f\n", n.Name, n.X, n.Y)
+			logAndPrint(logger, "Node: %-25s => X: %.6f  Y: %.6f  Z: %.6f  RAM: %-5s  vCores: %d\n",
+				n.Name, n.X, n.Y, n.Z, n.RAM, n.Vcores)
 		}
 
 		// RTT
@@ -191,16 +181,7 @@ func main() {
 			logAndPrint(logger, "Node: %-25s => RTT: %.2f ms\n", n.Name, n.RTT)
 		}
 
-		// Ping
-		logAndPrint(logger, "\n[PING]\n")
-		sort.Slice(filtered, func(i, j int) bool {
-			return filtered[i].PingRTT < filtered[j].PingRTT
-		})
-		for _, n := range filtered {
-			logAndPrint(logger, "Node: %-25s => Ping: %s\n", n.Name, n.PingResult)
-		}
-
 		logFile.Close()
-		time.Sleep(2 * time.Second)
+		time.Sleep(8 * time.Second)
 	}
 }
