@@ -14,52 +14,18 @@ import (
 )
 
 type Node struct {
-	Name   string
-	X      float64
-	Y      float64
-	Z      float64
-	RTT    float64
-	RAM    string
-	Vcores int
-}
-
-var nodeResources = map[string]struct {
-	RAM    string
-	Vcores int
-}{
-	"clab-century-serf1":  {RAM: "16GB", Vcores: 4},
-	"clab-century-serf2":  {RAM: "32GB", Vcores: 8},
-	"clab-century-serf3":  {RAM: "8GB", Vcores: 2},
-	"clab-century-serf4":  {RAM: "64GB", Vcores: 12},
-	"clab-century-serf5":  {RAM: "16GB", Vcores: 6},
-	"clab-century-serf6":  {RAM: "32GB", Vcores: 10},
-	"clab-century-serf7":  {RAM: "8GB", Vcores: 2},
-	"clab-century-serf8":  {RAM: "64GB", Vcores: 16},
-	"clab-century-serf9":  {RAM: "16GB", Vcores: 4},
-	"clab-century-serf10": {RAM: "32GB", Vcores: 6},
-	"clab-century-serf11": {RAM: "8GB", Vcores: 2},
-	"clab-century-serf12": {RAM: "64GB", Vcores: 14},
-	"clab-century-serf13": {RAM: "16GB", Vcores: 4},
-	"clab-century-serf14": {RAM: "32GB", Vcores: 8},
-	"clab-century-serf15": {RAM: "8GB", Vcores: 2},
-	"clab-century-serf16": {RAM: "64GB", Vcores: 12},
-	"clab-century-serf17": {RAM: "16GB", Vcores: 6},
-	"clab-century-serf18": {RAM: "32GB", Vcores: 8},
-	"clab-century-serf19": {RAM: "8GB", Vcores: 2},
-	"clab-century-serf20": {RAM: "64GB", Vcores: 16},
-	"clab-century-serf21": {RAM: "16GB", Vcores: 6},
-	"clab-century-serf22": {RAM: "32GB", Vcores: 10},
-	"clab-century-serf23": {RAM: "8GB", Vcores: 2},
-	"clab-century-serf24": {RAM: "64GB", Vcores: 14},
-	"clab-century-serf25": {RAM: "16GB", Vcores: 4},
-	"clab-century-serf26": {RAM: "32GB", Vcores: 6},
+	Name string
+	X    float64
+	Y    float64
+	Z    float64
+	RTT  float64
 }
 
 func getRTTFromCommand(source, target string) (float64, error) {
 	cmd := exec.Command("./serf_0107", "rtt", source, target)
 	output, err := cmd.Output()
 	if err != nil {
-		return -1, fmt.Errorf("failed to run serf_og rtt command: %w", err)
+		return -1, fmt.Errorf("failed to run serf rtt command: %w", err)
 	}
 
 	line := strings.TrimSpace(string(output))
@@ -121,15 +87,11 @@ func main() {
 				continue
 			}
 
-			res := nodeResources[member.Name]
-
 			nodes = append(nodes, Node{
-				Name:   member.Name,
-				X:      coord.Vec[0],
-				Y:      coord.Vec[1],
-				Z:      coord.Vec[2],
-				RAM:    res.RAM,
-				Vcores: res.Vcores,
+				Name: member.Name,
+				X:    coord.Vec[0],
+				Y:    coord.Vec[1],
+				Z:    coord.Vec[2],
 			})
 		}
 
@@ -161,15 +123,14 @@ func main() {
 		timestamp := time.Now().Format("2006-01-02 15:04:05")
 		logAndPrint(logger, "\n--- Run at %s ---\n", timestamp)
 
-		// Coordinates + Resources
-		logAndPrint(logger, "[COORDINATES + RESOURCES]\n")
-		logAndPrint(logger, "Node: %-25s => X: %.6f  Y: %.6f  Z: %.6f  RAM: %-5s  vCores: %d   [CURRENT NODE]\n",
-			currentNode, thisCoord.Vec[0], thisCoord.Vec[1], thisCoord.Vec[2],
-			nodeResources[currentNode].RAM, nodeResources[currentNode].Vcores)
+		// Coordinates
+		logAndPrint(logger, "[COORDINATES]\n")
+		logAndPrint(logger, "Node: %-25s => X: %.6f  Y: %.6f  Z: %.6f   [CURRENT NODE]\n",
+			currentNode, thisCoord.Vec[0], thisCoord.Vec[1], thisCoord.Vec[2])
 
 		for _, n := range filtered {
-			logAndPrint(logger, "Node: %-25s => X: %.6f  Y: %.6f  Z: %.6f  RAM: %-5s  vCores: %d\n",
-				n.Name, n.X, n.Y, n.Z, n.RAM, n.Vcores)
+			logAndPrint(logger, "Node: %-25s => X: %.6f  Y: %.6f  Z: %.6f\n",
+				n.Name, n.X, n.Y, n.Z)
 		}
 
 		// RTT
