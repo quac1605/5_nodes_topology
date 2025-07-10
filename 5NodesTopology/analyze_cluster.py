@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 import numpy as np
@@ -5,162 +6,165 @@ import time
 from hilbertcurve.hilbertcurve import HilbertCurve
 
 # Hilbert Curve config
-P = 14  # precision
+P = 16  # precision
 N = 5   # dimensions
 
-# Hardcoded pseudo resource data
+# Hardcoded pseudo resource data (RAM in GB, vCores)
 node_resources = {
-    "clab-century-serf1":  (16, 4),
-    "clab-century-serf2":  (32, 8),
-    "clab-century-serf3":  (8, 2),
-    "clab-century-serf4":  (64, 12),
-    "clab-century-serf5":  (16, 6),
-    "clab-century-serf6":  (32, 10),
-    "clab-century-serf7":  (8, 2),
-    "clab-century-serf8":  (64, 16),
-    "clab-century-serf9":  (16, 4),
-    "clab-century-serf10": (32, 6),
-    "clab-century-serf11": (8, 2),
-    "clab-century-serf12": (64, 14),
-    "clab-century-serf13": (16, 4),
-    "clab-century-serf14": (32, 8),
-    "clab-century-serf15": (8, 2),
-    "clab-century-serf16": (64, 12),
-    "clab-century-serf17": (16, 6),
-    "clab-century-serf18": (32, 8),
-    "clab-century-serf19": (8, 2),
-    "clab-century-serf20": (64, 16),
-    "clab-century-serf21": (16, 6),
-    "clab-century-serf22": (32, 10),
-    "clab-century-serf23": (8, 2),
-    "clab-century-serf24": (64, 14),
-    "clab-century-serf25": (16, 4),
-    "clab-century-serf26": (32, 6),
+    "clab-century-serf1":  (8, 8),
+    "clab-century-serf2":  (8, 8),
+    "clab-century-serf3":  (8, 8),
+    "clab-century-serf4":  (8, 8),
+    "clab-century-serf5":  (8, 8),
+    "clab-century-serf6":  (8, 8),
+    "clab-century-serf7":  (8, 8),
+    "clab-century-serf8":  (8, 8),
+    "clab-century-serf9":  (8, 8),
+    "clab-century-serf10": (8, 8),
+    "clab-century-serf11": (8, 8),
+    "clab-century-serf12": (8, 8),
+    "clab-century-serf13": (8, 8),
+    "clab-century-serf14": (8, 8),
+    "clab-century-serf15": (8, 8),
+    "clab-century-serf16": (8, 8),
+    "clab-century-serf17": (8, 8),
+    "clab-century-serf18": (8, 8),
+    "clab-century-serf19": (8, 8),
+    "clab-century-serf20": (8, 8),
+    "clab-century-serf21": (8, 8),
+    "clab-century-serf22": (8, 8),
+    "clab-century-serf23": (8, 8),
+    "clab-century-serf24": (8, 8),
+    "clab-century-serf25": (8, 8),
+    "clab-century-serf26": (8, 8),
 }
 
-def copy_log_from_container(container_name, container_path, host_path):
+# Paths
+CONTAINER_NAME = "clab-century-serf1"
+CONTAINER_LOG_PATH = "/opt/serfapp/nodes_log.txt"
+HOST_LOG_DIR = "./dist"
+HOST_LOG_PATH = os.path.join(HOST_LOG_DIR, "nodes_log.txt")
+SUMMARY_FILE = "nodes_data_with_Hilbert.txt"
+
+
+def copy_log_from_container():
+    os.makedirs(HOST_LOG_DIR, exist_ok=True)
     try:
-        subprocess.run(
-            ["docker", "cp", f"{container_name}:{container_path}", host_path],
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
+        subprocess.run([
+            "docker", "cp",
+            f"{CONTAINER_NAME}:{CONTAINER_LOG_PATH}", HOST_LOG_PATH
+        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
-        print(f"Error copying file from Docker container: {e}")
-        exit(1)
+        print(f"[Error] Could not copy log: {e}")
+        return False
+    return True
 
 
 def normalize_coordinates(coords, bits):
-    coords_array = np.array(list(coords.values()))
-    min_vals = coords_array.min(axis=0)
-    max_vals = coords_array.max(axis=0)
-    scale = (2**bits - 1) / (max_vals - min_vals)
-    normalized = ((coords_array - min_vals) * scale).astype(int)
-    return (
-        {node: tuple(normalized[i]) for i, node in enumerate(coords)},
-        min_vals,
-        max_vals,
-    )
+    arr = np.array(list(coords.values()))
+    minv = arr.min(axis=0)
+    maxv = arr.max(axis=0)
+    diff = maxv - minv
+    scale = np.where(diff == 0, 1.0, (2**bits - 1)/diff)
+    norm = (arr - minv) * scale
+    norm[:, diff==0] = 0
+    return {n: tuple(norm[i].astype(int)) for i,n in enumerate(coords)}, minv, maxv
 
 
-def denormalize(norm_point, min_vals, max_vals, bits):
-    scale = (max_vals - min_vals) / (2**bits - 1)
-    return norm_point * scale + min_vals
+def denormalize(norm_pt, minv, maxv, bits):
+    scale = (maxv - minv)/(2**bits-1)
+    return norm_pt*scale + minv
 
 
-def parse_log(filename):
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-
-    coordinates = {}
-    rtts = {}
-    current_section = None
-
-    for line in lines:
-        line = line.strip()
-
-        if '[COORDINATES]' in line:
-            current_section = 'coordinates'
-        elif '[RTT]' in line:
-            current_section = 'rtt'
-        elif 'Node:' in line:
-            match = re.match(r'.*Node: (\S+)\s+=> (.+)', line)
-            if not match:
+def parse_log():
+    coords, rtts = {}, {}
+    section = None
+    if not os.path.isfile(HOST_LOG_PATH):
+        return coords, rtts
+    with open(HOST_LOG_PATH) as f:
+        for line in f:
+            line = line.strip()
+            if '[COORDINATES]' in line:
+                section = 'coord'; continue
+            if '[RTT]' in line:
+                section = 'rtt'; continue
+            if 'Node:' not in line:
                 continue
-            node, data = match.groups()
-
-            if current_section == 'coordinates':
-                c_match = re.search(r'X:\s*([\-\d.]+)\s*Y:\s*([\-\d.]+)\s*Z:\s*([\-\d.]+)', data)
-                if c_match and node in node_resources:
-                    x, y, z = c_match.groups()
+            m = re.match(r'.*Node:\s*(\S+)\s*=>\s*(.*)', line)
+            if not m:
+                continue
+            node, data = m.groups()
+            if section == 'coord':
+                cm = re.search(r'X:\s*([\-\d.]+)\s*Y:\s*([\-\d.]+)\s*Z:\s*([\-\d.]+)', data)
+                if cm and node in node_resources:
+                    x, y, z = cm.groups()
                     ram, vcores = node_resources[node]
-                    coordinates[node] = (float(x), float(y), float(z), ram, vcores)
+                    coords[node] = (float(x), float(y), float(z), ram, vcores)
+            elif section == 'rtt':
+                rm = re.search(r'RTT:\s*([\d.]+)\s*ms', data)
+                if rm:
+                    rtts[node] = float(rm.group(1))
+    return coords, rtts
 
-            elif current_section == 'rtt':
-                rtt_match = re.search(r'RTT:\s*([\d.]+)\s*ms', data)
-                if rtt_match:
-                    rtts[node] = float(rtt_match.group(1))
 
-    return coordinates, rtts
+def write_summary_to_file(hilb):
+    """
+    Writes node name and H-index to SUMMARY_FILE.
+    """
+    with open(SUMMARY_FILE, 'w') as f:
+        f.write("# node H_index\n")
+        for node in sorted(hilb):
+            f.write(f"{node} {hilb[node]}\n")
+
+
+def print_console(coords, rtts, hilb, recon):
+    print(f"\n--- Run at {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
+    print("RTT Results:")
+    for n, r in sorted(rtts.items(), key=lambda x: x[1]):
+        print(f"  {n:<25} => {r:.2f} ms")
+    print("\nHilbert & Decoded 5D Points:")
+    for n in sorted(hilb):
+        h = hilb[n]
+        ox, oy, oz, ram, cores = coords[n]
+        dx, dy, dz, dram, dcores = recon[n]
+        print(
+            f"Node {n}: H={h}\n"
+            f"  Orig => (X={ox:.6f}, Y={oy:.6f}, Z={oz:.6f}, RAM={ram}GB, Cores={cores})\n"
+            f"  Dec  => (X={dx:.6f}, Y={dy:.6f}, Z={dz:.6f}, RAM={dram:.2f}GB, Cores={dcores:.2f})\n"
+        )
 
 
 def process():
-    container_name = "clab-century-serf1"
-    container_path = "/opt/serfapp/nodes_log.txt"
-    host_path = "./dist/nodes_log.txt"
-
-    copy_log_from_container(container_name, container_path, host_path)
-
-    coords, rtts = parse_log(host_path)
-
-    if not coords:
-        print(f"[{time.strftime('%H:%M:%S')}] ⚠️ No coordinate data found in the log file. Skipping this run.")
+    if not copy_log_from_container():
+        print("[Error] Log copy failed.")
         return
 
-    # Normalize and compute Hilbert indices
-    norm_coords, min_vals, max_vals = normalize_coordinates(coords, P)
-    hilbert_curve = HilbertCurve(P, N)
+    coords, rtts = parse_log()
+    if not coords:
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] ⚠️ No data.")
+        return
 
-    hilbert_values = {}
-    recon_norm = {}
-    recon_coords = {}
-    for node, point in coords.items():
-        norm_point = norm_coords[node]
-        h = int(hilbert_curve.distance_from_point(list(norm_point)))
-        hilbert_values[node] = h
-        decoded_norm = hilbert_curve.point_from_distance(h)
-        recon_norm[node] = decoded_norm
-        recon_coords[node] = denormalize(np.array(decoded_norm), min_vals, max_vals, P)
+    norm, minv, maxv = normalize_coordinates(coords, P)
+    hc = HilbertCurve(P, N)
+    hilb = {}
+    recon = {}
+    for n in coords:
+        h = int(hc.distance_from_point(list(norm[n])))
+        hilb[n] = h
+        dec_norm = hc.point_from_distance(h)
+        recon[n] = denormalize(np.array(dec_norm), minv, maxv, P)
 
-    # Print header
-    print(f"\n--- Run at {time.strftime('%H:%M:%S')} ---")
-    print(f"Current Node: clab-century-serf1\n")
+    # Write only node and H-index to file
+    write_summary_to_file(hilb)
+    print(f"[Info] Written H-indices to {SUMMARY_FILE}")
 
-    # RTT results
-    print("1. Distance through Round Trip Time (ms):")
-    sorted_rtt = sorted(
-        [(n, rtt) for n, rtt in rtts.items() if n != 'clab-century-serf1'],
-        key=lambda x: x[1]
-    )
-    for node, rtt in sorted_rtt:
-        print(f"   {node:<25} => {rtt:.2f} ms")
+    # Print full results to console
+    print_console(coords, rtts, hilb, recon)
 
-    # Raw Hilbert index and decoded coordinates
-    print("\n2. Raw Hilbert index & decoded point (X,Y,Z,RAM,vCores):")
-    for node in sorted(hilbert_values):
-        h = hilbert_values[node]
-        orig = coords[node]
-        dec = recon_coords[node]
-        print(
-            f"   {node:<25} => H={h:<10} Decoded=({dec[0]:.6f}, {dec[1]:.6f}, {dec[2]:.6f}, {dec[3]:.2f}, {dec[4]:.2f}) "
-            f"Original=({orig[0]:.6f}, {orig[1]:.6f}, {orig[2]:.6f}, {orig[3]}, {orig[4]})"
-        )
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         while True:
             process()
             time.sleep(3.5)
     except KeyboardInterrupt:
-        print("\nStopped by user.")
+        print("Stopped by user.")
