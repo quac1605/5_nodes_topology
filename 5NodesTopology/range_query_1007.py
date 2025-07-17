@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-import os, re, subprocess, bisect
+import os
+import re
+import subprocess
+import bisect
 import numpy as np
 from hilbertcurve.hilbertcurve import HilbertCurve
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 1) Configuration & Serf‑log parsing (same as your analyze_cluster.py)
+# 1) Configuration & Serf‑log parsing
 # ─────────────────────────────────────────────────────────────────────────────
-P = 16  # bits per dimension
-N = 5   # dims: X, Y, Z, RAM, vCores
+P = 16   # bits per dim
+N = 5    # dims: X, Y, Z, RAM, vCores
 
 CONTAINER_NAME     = "clab-century-serf1"
 CONTAINER_LOG_PATH = "/opt/serfapp/nodes_log.txt"
 HOST_LOG_DIR       = "./dist"
 HOST_LOG_PATH      = os.path.join(HOST_LOG_DIR, "nodes_log.txt")
 
-# All nodes have (8 GB, 8 vCores) in your setup
 node_resources = {f"clab-century-serf{i}": (8, 8) for i in range(1, 27)}
 
 def copy_log_from_container():
@@ -26,15 +28,15 @@ def copy_log_from_container():
             HOST_LOG_PATH
         ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except subprocess.CalledProcessError as e:
-        print(f"[Error] cannot copy log: {e}")
+        print(f"[Error] {e}")
         return False
     return True
 
 def parse_log():
     coords, rtts = {}, {}
+    section = None
     if not os.path.isfile(HOST_LOG_PATH):
         raise FileNotFoundError(HOST_LOG_PATH)
-    section = None
     with open(HOST_LOG_PATH) as f:
         for line in f:
             line = line.strip()
@@ -50,129 +52,132 @@ def parse_log():
             node, rest = m.groups()
             if section == "coord":
                 cm = re.search(r"X:\s*([-\d.]+)\s*Y:\s*([-\d.]+)\s*Z:\s*([-\d.]+)", rest)
-                if cm and node in node_resources:
+                if cm:
                     x, y, z = map(float, cm.groups())
                     ram, cores = node_resources[node]
                     coords[node] = (x, y, z, ram, cores)
-            elif section == "rtt":
+            else:  # rtt
                 rm = re.search(r"RTT:\s*([\d.]+)\s*ms", rest)
                 if rm:
                     rtts[node] = float(rm.group(1))
+    # ensure current node has RTT=0
+    rtts[CONTAINER_NAME] = 0.0
     return coords, rtts
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2) Normalize coordinates → integer grid, compute Hilbert indices
+# 2) Normalize & 5‑D Hilbert index
 # ─────────────────────────────────────────────────────────────────────────────
-def normalize_coordinates(coords, bits):
-    arr  = np.array(list(coords.values()), dtype=float)  # shape=(n,5)
+def normalize_and_index(coords, bits):
+    arr  = np.array(list(coords.values()), dtype=float)  # (n,5)
     minv = arr.min(axis=0)
     maxv = arr.max(axis=0)
     diff = maxv - minv
 
-    # Build scale safely without divide‑by‑zero warnings:
     scale = np.empty_like(diff)
-    nz = diff != 0
+    nz    = diff != 0
     scale[nz] = (2**bits - 1) / diff[nz]
     scale[~nz] = 1.0
 
     norm = (arr - minv) * scale
-    norm[:, ~nz] = 0  # zero out any constant‐dims
+    norm[:, ~nz] = 0
 
-    mapping = {
-        node: tuple(norm[i].round().astype(int))
-        for i, node in enumerate(coords)
-    }
-    return mapping, minv, maxv
+    hc = HilbertCurve(bits, N)
+    hilb_map = {}
+    for i, node in enumerate(coords):
+        pt = tuple(int(round(v)) for v in norm[i])
+        hilb_map[node] = hc.distance_from_point(list(pt))
 
-def compute_hilbert_index(norm_map):
-    hc        = HilbertCurve(P, N)
-    hilb_map  = {n: int(hc.distance_from_point(list(pt))) for n, pt in norm_map.items()}
-    sorted_arr= sorted((h, n) for n, h in hilb_map.items())
-    hil_list  = [h for h, _ in sorted_arr]
-    return hilb_map, sorted_arr, hil_list
+    sorted_arr = sorted((h, n) for n, h in hilb_map.items())
+    hil_list   = [h for h, _ in sorted_arr]
+    return hilb_map, sorted_arr, hil_list, minv, scale
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3) Fast range‐query via min/max of the 32 corners + one bisect
+# 3) Sliding‐window range query on the Hilbert list
 # ─────────────────────────────────────────────────────────────────────────────
-def range_query(
-    current_node,
-    coords, rtts,
-    norm_map, minv, maxv,
-    sorted_arr, hil_list,
-    rtt_thresh_ms, ram_max, cores_max
+def range_query_sliding(
+    current_node, coords, rtts,
+    hilb_map, sorted_arr, hil_list,
+    rtt_thresh, ram_min, cores_min
 ):
-    # Raw center = Serf coords of current_node
-    x0, y0, z0, _, _ = coords[current_node]
+    # helper: does node satisfy all 3 real criteria?
+    def in_box(n):
+        _, _, _, ram, cores = coords[n]
+        return (
+            rtts.get(n, float('inf')) <= rtt_thresh and
+            ram   >= ram_min and
+            cores >= cores_min
+        )
 
-    # Define your raw query‐box in the 5 dims
-    raw_min = (x0 - rtt_thresh_ms, y0 - rtt_thresh_ms, z0 - rtt_thresh_ms, 0, 0)
-    raw_max = (x0 + rtt_thresh_ms, y0 + rtt_thresh_ms, z0 + rtt_thresh_ms, ram_max, cores_max)
+    # locate current node in the sorted hil_list
+    h0   = hilb_map[current_node]
+    idx0 = bisect.bisect_left(hil_list, h0)
 
-    # Recompute scale exactly as above
-    diff  = maxv - minv
-    scale = np.empty_like(diff)
-    nz = diff != 0
-    scale[nz] = (2**P - 1) / diff[nz]
-    scale[~nz] = 1.0
+    candidates = set()
+    # include the current node if it qualifies
+    if in_box(current_node):
+        candidates.add(current_node)
 
-    # Generate all 2^5 = 32 corner grid‐points
-    corners = []
-    for mask in range(1 << N):
-        pt = []
-        for d in range(N):
-            val = raw_max[d] if (mask >> d) & 1 else raw_min[d]
-            # map to grid and choose floor for low‐corners, ceil for high‐corners
-            scaled = (val - minv[d]) * scale[d]
-            idx    = int(np.ceil(scaled)) if (mask >> d) & 1 else int(np.floor(scaled))
-            # clamp into [0, 2^P−1]
-            idx    = max(0, min(idx, 2**P - 1))
-            pt.append(idx)
-        corners.append(tuple(pt))
+    left, right = idx0, idx0
+    while True:
+        moved = False
+        # try right neighbor
+        if right + 1 < len(hil_list):
+            _, nr = sorted_arr[right + 1]
+            if in_box(nr):
+                candidates.add(nr)
+                right += 1
+                moved = True
+        # try left neighbor
+        if left - 1 >= 0:
+            _, nl = sorted_arr[left - 1]
+            if in_box(nl):
+                candidates.add(nl)
+                left -= 1
+                moved = True
+        if not moved:
+            break
 
-    # Include the current node’s own index too
-    hc = HilbertCurve(P, N)
-    h_curr = hc.distance_from_point(list(norm_map[current_node]))
-    h_vals = [hc.distance_from_point(list(c)) for c in corners] + [h_curr]
-
-    lo, hi = min(h_vals), max(h_vals)
-
-    # Bisect once to get a small superset
-    i0 = bisect.bisect_left(hil_list, lo)
-    i1 = bisect.bisect_right(hil_list, hi)
-    candidates = {sorted_arr[i][1] for i in range(i0, i1)}
-
-    # Final exact filter on RTT, RAM, cores
-    return sorted([
-        n for n in candidates
-        if rtts.get(n, float('inf')) <= rtt_thresh_ms
-        and coords[n][3] <= ram_max
-        and coords[n][4] <= cores_max
-    ])
+    return sorted(candidates)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4) Main – tie it all together
+# 4) Main – tie it all together, compute FP & FN
 # ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     if not copy_log_from_container():
         exit(1)
 
-    coords, rtts                   = parse_log()
-    norm_map, minv, maxv           = normalize_coordinates(coords, P)
-    hilb_map, sorted_arr, hil_list = compute_hilbert_index(norm_map)
+    coords, rtts = parse_log()
+    hilb_map, sorted_arr, hil_list, minv, scale = normalize_and_index(coords, P)
 
-    # Example: within 20 ms RTT, ≤16 GB RAM, ≤16 vCores of clab-century-serf1
-    matches = range_query(
-        current_node=CONTAINER_NAME,
-        coords=coords,
-        rtts=rtts,
-        norm_map=norm_map,
-        minv=minv,
-        maxv=maxv,
-        sorted_arr=sorted_arr,
-        hil_list=hil_list,
-        rtt_thresh_ms=40.0,
-        ram_max=16,
-        cores_max=16
+    # print all nodes for context
+    print("\nAll nodes data:")
+    for n in sorted(coords):
+        x, y, z, ram, cores = coords[n]
+        print(f"{n:25s} RTT={rtts[n]:6.2f}ms  RAM={ram:2d}GB  Cores={cores:2d}  H={hilb_map[n]}")
+
+    # perform range query
+    thresh, rmin, cmin = 30.0, 8, 8
+    result = range_query_sliding(
+        CONTAINER_NAME, coords, rtts,
+        hilb_map, sorted_arr, hil_list,
+        rtt_thresh=thresh, ram_min=rmin, cores_min=cmin
     )
+    print(f"\nRange‐query result: {len(result)} nodes → {result}")
 
-    print("Nodes matching query:", matches)
+    # compute ground‑truth set
+    true_set = sorted([
+        n for n in coords
+        if rtts.get(n, float('inf')) <= thresh
+        and coords[n][3] >= rmin
+        and coords[n][4] >= cmin
+    ])
+    print(f"\nGround truth       : {len(true_set)} nodes → {true_set}")
+
+    # false positives and false negatives
+    set_res  = set(result)
+    set_true = set(true_set)
+    fp = sorted(set_res - set_true)
+    fn = sorted(set_true - set_res)
+
+    print(f"\nFalse Positives ({len(fp)}): {fp}")
+    print(f"False Negatives ({len(fn)}): {fn}")

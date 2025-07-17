@@ -1,0 +1,24 @@
+sudo sysctl -w net.core.rmem_default=2097152
+
+sudo sysctl -w net.core.wmem_default=2097152
+
+sudo sysctl -w net.core.rmem_max=2097152
+
+sudo sysctl -w net.core.wmem_max=2097152
+ 
+sudo sysctl -w net.ipv4.neigh.default.gc_thresh1=16384
+
+sudo sysctl -w net.ipv4.neigh.default.gc_thresh2=32768
+
+sudo sysctl -w net.ipv4.neigh.default.gc_thresh3=65536
+ 
+sudo sysctl -w net.ipv6.neigh.default.gc_thresh1=16384
+
+sudo sysctl -w net.ipv6.neigh.default.gc_thresh2=32768
+
+sudo sysctl -w net.ipv6.neigh.default.gc_thresh3=65536
+ 
+
+sudo ip -o link show \
+  | awk '/qlen 0/ { gsub(":", "", $2); print $2 }' \
+  | xargs -r -n1 sudo ip link set dev txqueuelen 1000
