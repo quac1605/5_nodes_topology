@@ -9,7 +9,7 @@ from hilbertcurve.hilbertcurve import HilbertCurve
 # ─────────────────────────────────────────────────────────────────────────────
 # 1) Configuration & Serf‑log parsing
 # ─────────────────────────────────────────────────────────────────────────────
-P = 16   # bits per dim
+P = 16  # bits per dim
 N = 5    # dims: X, Y, Z, RAM, vCores
 
 CONTAINER_NAME     = "clab-century-serf1"
@@ -17,8 +17,14 @@ CONTAINER_LOG_PATH = "/opt/serfapp/nodes_log.txt"
 HOST_LOG_DIR       = "./dist"
 HOST_LOG_PATH      = os.path.join(HOST_LOG_DIR, "nodes_log.txt")
 
+# All nodes default to (8 GB, 8 vCores)
 node_resources = {f"clab-century-serf{i}": (8, 8) for i in range(1, 27)}
-
+# Override RAM for serf5–serf8 → 4 GB
+for i in range(5, 9):
+    node_resources[f"clab-century-serf{i}"] = (4, node_resources[f"clab-century-serf{i}"][1])
+# Override vCores for serf9–serf13 → 4 cores
+for i in range(9, 14):
+    node_resources[f"clab-century-serf{i}"] = (node_resources[f"clab-century-serf{i}"][0], 4)
 def copy_log_from_container():
     os.makedirs(HOST_LOG_DIR, exist_ok=True)
     try:
