@@ -19,15 +19,12 @@ HOST_LOG_PATH      = os.path.join(HOST_LOG_DIR, "nodes_log.txt")
 
 #All nodes default to (8 GB, 8 vCores)
 node_resources = {f"clab-century-serf{i}": (16, 16) for i in range(1, 27)}
-# Override RAM for serf5–serf8 → 4 GB
-for i in range(5, 9):
-    node_resources[f"clab-century-serf{i}"] = (4, node_resources[f"clab-century-serf{i}"][1])
-# Override vCores for serf9–serf13 → 4 cores
-for i in range(9, 14):
-    node_resources[f"clab-century-serf{i}"] = (node_resources[f"clab-century-serf{i}"][0], 4)
-
+for i in range(1, 14):
+    node_resources[f"clab-century-serf{i}"] = (16, 16)
+for i in range(14, 27):
+    node_resources[f"clab-century-serf{i}"] = (8, 8)
 # query thresholds
-THR_RTT, THR_RAM, THR_CORES = 100.0, 8, 8  # 100ms, ≥8GB, ≥8 cores
+THR_RTT, THR_RAM, THR_CORES = 100, 8, 8  # 100ms, ≥8GB, ≥8 cores
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1) Copy & Parse the Serf Log
@@ -159,7 +156,7 @@ def pure_hilbert_range_query(
     raw_max = (x0+thr_rtt, y0+thr_rtt, z0+thr_rtt, maxv[3],   maxv[4])
 
     # Map to integer grid, pad ±1 cell
-    pad = 1
+    pad = 0
     min_pt, max_pt = [], []
     for d in range(N):
         lo = int(np.floor((raw_min[d] - minv[d]) * scale[d])) - pad

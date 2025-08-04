@@ -21,4 +21,4 @@ sudo sysctl -w net.ipv6.neigh.default.gc_thresh3=65536
 
 sudo ip -o link show \
   | awk '/qlen 0/ { gsub(":", "", $2); print $2 }' \
-  | xargs -r -n1 sudo ip link set dev txqueuelen 1000
+  | xargs -r -n1 sudo ip link set dev txqueuelen 5000
