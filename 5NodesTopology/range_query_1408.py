@@ -59,6 +59,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
 import numpy as np
+import random
 from hilbertcurve.hilbertcurve import HilbertCurve
 
 # ==================== Config ====================
@@ -71,10 +72,10 @@ CONTAINER_LOG_PATH = os.getenv("CONTAINER_LOG_PATH", "/opt/serfapp/nodes_log.txt
 HOST_LOG_DIR       = os.getenv("HOST_LOG_DIR", "./dist")
 HOST_LOG_PATH      = os.path.join(HOST_LOG_DIR, "nodes_log.txt")
 
-TIME_WINDOW_MS = float(os.getenv("TIME_WINDOW_MS", "120"))   # ms
-RAM_THRESH     = float(os.getenv("RAM_THRESH", "4"))        # GB
-CORE_THRESH    = float(os.getenv("CORE_THRESH", "4"))       # vCores
-STOR_THRESH    = float(os.getenv("STOR_THRESH", "200"))     # GB
+TIME_WINDOW_MS = float(os.getenv("TIME_WINDOW_MS", "50"))   # ms
+RAM_THRESH     = float(os.getenv("RAM_THRESH", "63"))        # GB
+CORE_THRESH    = float(os.getenv("CORE_THRESH", "10"))       # vCores
+STOR_THRESH    = float(os.getenv("STOR_THRESH", "300"))     # GB
 
 RADIUS_STRATEGY = (os.getenv("RADIUS_STRATEGY", "maxd")).lower()  # cal|q90|maxd|hybrid|guaranteed
 RADIUS_QUANTILE = float(os.getenv("RADIUS_QUANTILE", "0.90"))
@@ -83,17 +84,44 @@ RADIUS_CELL_PAD = float(os.getenv("RADIUS_CELL_PAD", "1.0"))  # add this many ce
 SHOW_INTERVALS  = int(os.getenv("SHOW_INTERVALS", "32"))
 
 # ==================== Per-node resources (EDIT THESE) ====================
-# RAM / vCores per node:
-node_resources: Dict[str, tuple[int,int]] = {f"clab-century-serf{i}": (16, 16) for i in range(1, 27)}
-for i in range(14, 27):
-    node_resources[f"clab-century-serf{i}"] = (8, 8)  # example override; change as you like
+## RAM / vCores per node:
+#node_resources: Dict[str, tuple[int,int]] = {f"clab-century-serf{i}": (16, 16) for i in range(1, 27)}
+#for i in range(7, 14):
+#    node_resources[f"clab-century-serf{i}"] = (8, 8)  # example override; change as you like
+#for i in range(21, 27):
+#    node_resources[f"clab-century-serf{i}"] = (8, 8)
+## Storage (GB) per node:
+#node_storage: Dict[str, int] = {}
+#for i in range(1, 4):    node_storage[f"clab-century-serf{i}"]  = 100
+#for i in range(4, 7):   node_storage[f"clab-century-serf{i}"]  = 300
+#for i in range(7, 14):   node_storage[f"clab-century-serf{i}"]  = 300
+#for i in range(14, 17):  node_storage[f"clab-century-serf{i}"]  = 100
+#for i in range(17, 21):  node_storage[f"clab-century-serf{i}"]  = 300
+#for i in range(21, 27):  node_storage[f"clab-century-serf{i}"]  = 300
+## ========================================================================
 
-# Storage (GB) per node:
+_seed = os.getenv("RESOURCE_RNG_SEED")
+if _seed is not None:
+    try:
+        random.seed(int(_seed))
+    except ValueError:
+        random.seed(_seed)  # allow non-int seeds too
+
+# Generate random resources for the 26 serf nodes:
+node_resources: Dict[str, tuple[int, int]] = {}
 node_storage: Dict[str, int] = {}
-for i in range(1, 7):    node_storage[f"clab-century-serf{i}"]  = 300
-for i in range(7, 14):   node_storage[f"clab-century-serf{i}"]  = 300
-for i in range(14, 21):  node_storage[f"clab-century-serf{i}"]  = 300
-for i in range(21, 27):  node_storage[f"clab-century-serf{i}"]  = 300
+
+for i in range(1, 27):
+    name = f"clab-century-serf{i}"
+    # RAM: 4..128 GB (step 4)
+    ram_gb = 4 * random.randint(1, 32)          # 4, 8, 12, ..., 128
+    # vCores: 4..16 (integer)
+    cores  = random.randint(4, 16)               # 4, 5, ..., 16
+    # Storage: 100..1000 GB (step 10)
+    stor_gb = 10 * random.randint(10, 100)       # 100, 110, ..., 1000
+
+    node_resources[name] = (ram_gb, cores)
+    node_storage[name]   = stor_gb
 # ========================================================================
 
 # ==================== Utilities ====================
@@ -120,6 +148,10 @@ class Affine3:
     def to_real(self, g: np.ndarray) -> np.ndarray:
         """Integer grid -> real coordinate (lower cell corner)."""
         return (g.astype(float) / self.scale) + self.minv
+def serf_index(name: str) -> int:
+    # Extract the trailing number from names like "clab-century-serf17"
+    m = re.search(r"serf(\d+)$", name)
+    return int(m.group(1)) if m else 10**9  # unknowns go last
 
 def compress_intervals(sorted_indices: List[int]) -> List[Tuple[int, int]]:
     """Merge consecutive ints into [start, end] inclusive."""
@@ -398,7 +430,8 @@ def main():
 
     # ===== NEW: dump original data for every node =====
     print("\n=== Original Data (all nodes) ===")
-    for n in nodes:
+    nodes_numeric = sorted(nodes, key=serf_index)  # serf1..serf26
+    for n in nodes_numeric:
         show_node_raw(n, coords, rtts, ram, cores, stor)
 
     # Affine maps (coords + resources)
