@@ -25,9 +25,9 @@ HOST_LOG_DIR       = os.getenv("HOST_LOG_DIR", "./dist")
 HOST_LOG_PATH      = os.path.join(HOST_LOG_DIR, "nodes_log.txt")
 
 TIME_WINDOW_MS = float(os.getenv("TIME_WINDOW_MS", "120"))   # ms
-RAM_THRESH     = float(os.getenv("RAM_THRESH", "10"))        # GB
+RAM_THRESH     = float(os.getenv("RAM_THRESH", "10"))       # GB
 CORE_THRESH    = float(os.getenv("CORE_THRESH", "12"))      # vCores
-STOR_THRESH    = float(os.getenv("STOR_THRESH", "100"))      # GB
+STOR_THRESH    = float(os.getenv("STOR_THRESH", "100"))     # GB
 
 RADIUS_STRATEGY = (os.getenv("RADIUS_STRATEGY", "maxd")).lower()  # cal|q90|maxd|hybrid|guaranteed
 RADIUS_QUANTILE = float(os.getenv("RADIUS_QUANTILE", "0.90"))
@@ -35,45 +35,36 @@ RADIUS_PAD      = float(os.getenv("RADIUS_PAD", "1.02"))
 RADIUS_CELL_PAD = float(os.getenv("RADIUS_CELL_PAD", "1.0"))  # add this many cells (in real units)
 SHOW_INTERVALS  = int(os.getenv("SHOW_INTERVALS", "32"))
 
-# ==================== Per-node resources (EDIT THESE) ====================
-# RAM / vCores per node:
-node_resources: Dict[str, tuple[int,int]] = {f"clab-century-serf{i}": (16, 16) for i in range(1, 27)}
-for i in range(14, 27):
-   node_resources[f"clab-century-serf{i}"] = (8, 16)  # example override; change as you like
+# Safety: ensure P >= 1 for HilbertCurve
+if P < 1:
+    print(f"❌ HILBERT_BITS (P) must be >= 1 (got {P}).", file=sys.stderr)
+    sys.exit(4)
 
-# Storage (GB) per node:
+# ==================== Per-node resources (RANDOMIZED) ====================
+# Controls: set RESOURCE_RNG_SEED to get reproducible values across runs.
+_seed = os.getenv("RESOURCE_RNG_SEED")
+if _seed is not None:
+    try:
+        random.seed(int(_seed))
+    except ValueError:
+        random.seed(_seed)  # allow non-int seeds too
+
+# Generate random resources for the 26 serf nodes:
+node_resources: Dict[str, tuple[int, int]] = {}
 node_storage: Dict[str, int] = {}
-for i in range(1, 7):    node_storage[f"clab-century-serf{i}"]  = 300
-for i in range(7, 14):   node_storage[f"clab-century-serf{i}"]  = 300
-for i in range(14, 21):  node_storage[f"clab-century-serf{i}"]  = 300
-for i in range(21, 27):  node_storage[f"clab-century-serf{i}"]  = 300
-# ========================================================================
 
-## ==================== Per-node resources (RANDOMIZED) ====================
-## Controls: set RESOURCE_RNG_SEED to get reproducible values across runs.
-#_seed = os.getenv("RESOURCE_RNG_SEED")
-#if _seed is not None:
-#    try:
-#        random.seed(int(_seed))
-#    except ValueError:
-#        random.seed(_seed)  # allow non-int seeds too
-#
-## Generate random resources for the 26 serf nodes:
-#node_resources: Dict[str, tuple[int, int]] = {}
-#node_storage: Dict[str, int] = {}
-#
-#for i in range(1, 27):
-#    name = f"clab-century-serf{i}"
-#    # RAM: 4..128 GB (step 4)
-#    ram_gb = 4 * random.randint(1, 32)          # 4, 8, 12, ..., 128
-#    # vCores: 4..16 (integer)
-#    cores  = random.randint(4, 16)               # 4, 5, ..., 16
-#    # Storage: 100..1000 GB (step 10)
-#    stor_gb = 10 * random.randint(10, 100)       # 100, 110, ..., 1000
-#
-#    node_resources[name] = (ram_gb, cores)
-#    node_storage[name]   = stor_gb
-## ========================================================================
+for i in range(1, 27):
+    name = f"clab-century-serf{i}"
+    # RAM: 4..128 GB (step 4)
+    ram_gb = 4 * random.randint(1, 32)          # 4, 8, 12, ..., 128
+    # vCores: 4..16 (integer)
+    cores  = random.randint(4, 16)               # 4, 5, ..., 16
+    # Storage: 100..1000 GB (step 10)
+    stor_gb = 10 * random.randint(10, 100)       # 100, 110, ..., 1000
+
+    node_resources[name] = (ram_gb, cores)
+    node_storage[name]   = stor_gb
+# ========================================================================
 
 # ==================== Utilities ====================
 
@@ -288,23 +279,117 @@ def coord_intervals_from_inwindow_nodes(hc: HilbertCurve,
     ds = sorted(set(ds))
     return compress_intervals(ds), len(ds)
 
-def build_param_intervals_from_nodes(hc: HilbertCurve,
-                                     aff: Affine3,
-                                     ram: Dict[str, int],
-                                     cores: Dict[str, int],
-                                     stor: Dict[str, int],
-                                     nodes: List[str],
-                                     ram_thr: float, core_thr: float, stor_thr: float) -> tuple[List[Tuple[int,int]], int]:
+def build_param_intervals_full_orthant(
+    hc: HilbertCurve,
+    aff: Affine3,
+    ram_thr: float,
+    core_thr: float,
+    stor_thr: float,
+) -> tuple[list[tuple[int, int]], int]:
     """
-    Build param intervals from *occupied* points that pass thresholds strictly.
+    EXACT Hilbert cover of the axis-aligned orthant:
+        RAM > ram_thr, CORES > core_thr, STORAGE > stor_thr
+    over the entire integer grid [0..N-1]^3 produced by `aff`.
+
+    Returns:
+      (intervals, covered_points_count)
+
+    Notes:
+      - Uses strict '>' thresholds. In grid terms this is:
+            g >= floor((thr - min) * scale) + 1
+      - Produces a union of Hilbert intervals via dyadic tiling aligned with the curve.
+      - Efficient: descends only on boundary-touching subcubes.
     """
-    ds = set()
-    for n in nodes:
-        if (ram[n] > ram_thr) and (cores[n] > core_thr) and (stor[n] > stor_thr):
-            gp = aff.to_grid(np.array([ram[n], cores[n], stor[n]], dtype=float)).tolist()
-            ds.add(hc.distance_from_point(gp))
-    ds = sorted(ds)
-    return compress_intervals(ds), len(ds)
+    ND_local = 3
+    N = aff.N  # = 2^P
+
+    # ---- Convert real thresholds to integer grid lower bounds (strict >)
+    thr_real = np.array([ram_thr, core_thr, stor_thr], dtype=float)
+    gthr = np.floor((thr_real - aff.minv) * aff.scale + 1e-12).astype(int)
+    lower = np.clip(gthr + 1, 0, N)             # inclusive lower bounds per axis
+    upper = np.array([N - 1, N - 1, N - 1])     # inclusive upper bounds per axis
+
+    # Empty orthant check
+    span = np.maximum(upper - lower + 1, 0)
+    covered_points = int(np.prod(span))
+    if covered_points <= 0:
+        return [], 0
+
+    # ---- Hierarchy parameters from 'hc'
+    Pbits = hc.p
+    if Pbits < 1:
+        raise ValueError(f"Hilbert 'p' must be >= 1 for full-orthant cover (got p={Pbits}).")
+    if hc.n != ND_local:
+        raise ValueError(f"Hilbert dimension mismatch: expected {ND_local}, got {hc.n}")
+
+    P_local = Pbits
+    # Level L partitions space into (2^L)^ND blocks of side s = 2^(P-L).
+    # Each block is a contiguous Hilbert run of length block_size = s^ND.
+    side_by_level = [1 << (P_local - L) for L in range(P_local + 1)]               # s(L)
+    block_size_by_level = [1 << (ND_local * (P_local - L)) for L in range(P_local + 1)]   # s(L)^ND
+    CHILD_COUNT = 1 << ND_local  # 8 for 3D
+
+    # Build curves only for L >= 1 (avoid p=0)
+    hc_levels: list[HilbertCurve | None] = [None] + [HilbertCurve(L, ND_local) for L in range(1, P_local + 1)]
+
+    intervals: list[tuple[int, int]] = []
+
+    def block_box(L: int, dL: int) -> tuple[np.ndarray, np.ndarray]:
+        """Grid AABB [origin .. origin+s-1] for level-L block with coarse-Hilbert id dL."""
+        s = side_by_level[L]
+        if L == 0:
+            # single top-level block covering entire grid
+            origin = np.array([0, 0, 0], dtype=int)
+        else:
+            # coarse block coordinates in [0..2^L-1]^3, in Hilbert order
+            b = np.array(hc_levels[L].point_from_distance(dL), dtype=int)  # type: ignore[index]
+            origin = b * s
+        hi = origin + (s - 1)
+        return origin, hi
+
+    def overlap_state(origin: np.ndarray, hi: np.ndarray) -> str:
+        """Classify block vs query box [lower..upper]: 'out' | 'in' | 'partial'."""
+        if np.any(origin > upper) or np.any(hi < lower):
+            return "out"
+        if np.all(origin >= lower) and np.all(hi <= upper):
+            return "in"
+        return "partial"
+
+    # Recurse: global start index of a level-L block is dL * block_size_by_level[L]
+    def descend(L: int, dL: int):
+        blk = block_size_by_level[L]
+        origin, hi = block_box(L, dL)
+        st = overlap_state(origin, hi)
+
+        if st == "out":
+            return
+        if st == "in":
+            start = dL * blk
+            intervals.append((start, start + blk - 1))
+            return
+        # partial
+        if L == P_local:
+            # base voxel
+            start = dL * blk  # blk == 1
+            intervals.append((start, start))
+            return
+        base_child = dL * CHILD_COUNT  # children occupy a contiguous group
+        for c in range(CHILD_COUNT):
+            descend(L + 1, base_child + c)
+
+    # Start recursion at top-level block
+    descend(0, 0)
+
+    # Merge adjacent intervals
+    intervals.sort()
+    merged: list[tuple[int, int]] = []
+    for a, b in intervals:
+        if not merged or a > merged[-1][1] + 1:
+            merged.append((a, b))
+        else:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+
+    return merged, covered_points
 
 # ==================== Printing ====================
 
@@ -439,9 +524,9 @@ def main():
               f"max={dbg['r_max']:.6f}s  → chosen={radius_real:.6f}s "
               f"({dbg['strategy']} * pad {RADIUS_PAD} + cell_pad {RADIUS_CELL_PAD})")
 
-    # ===== Stage B: param intervals (occupied-only, strict >) =====
-    param_intervals, param_point_count = build_param_intervals_from_nodes(
-        hc_param, param_aff, ram, cores, stor, nodes,
+    # ===== Stage B: param intervals (FULL ORTHANT, strict >) =====
+    param_intervals, param_point_count = build_param_intervals_full_orthant(
+        hc_param, param_aff,
         RAM_THRESH, CORE_THRESH, STOR_THRESH
     )
 
@@ -466,7 +551,9 @@ def main():
     fn = sorted(set(gt) - set(matches))
 
     # ===== Prints =====
-    print_intervals("Coord Intervals", coord_intervals, total_points=coord_point_count, domain_total=(1 << (3 * P)))
+    domain_total = (1 << (3 * P))
+    print_intervals("Coord Intervals", coord_intervals, total_points=coord_point_count, domain_total=domain_total)
+    # For param intervals we don't pass domain_total because it's the *coord* domain; the param domain is the same size if the same P, but coverage percentage of the orthant might be huge.
     print_intervals("Param Intervals", param_intervals, total_points=param_point_count)
 
     print(f"\n=== Ground Truth (count={len(gt)}) ===")
