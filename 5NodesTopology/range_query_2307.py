@@ -3,31 +3,70 @@ import os
 import re
 import subprocess
 import bisect
+import random
 import numpy as np
 from hilbertcurve.hilbertcurve import HilbertCurve
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
-P = 6   # 7‑bit grid per dimension (128 cells)
-N = 5    # dims: X, Y, Z, RAM, vCores
+P = 6   # 6-bit grid per dimension (64 cells)
+N = 5   # dims: X, Y, Z, RAM, vCores
 
 CONTAINER_NAME     = "clab-century-serf1"
 CONTAINER_LOG_PATH = "/opt/serfapp/nodes_log.txt"
 HOST_LOG_DIR       = "./dist"
 HOST_LOG_PATH      = os.path.join(HOST_LOG_DIR, "nodes_log.txt")
 
-#All nodes default to (8 GB, 8 vCores)
-node_resources = {f"clab-century-serf{i}": (16, 16) for i in range(1, 27)}
-# Override RAM for serf5–serf8 → 4 GB
-for i in range(5, 9):
-    node_resources[f"clab-century-serf{i}"] = (4, node_resources[f"clab-century-serf{i}"][1])
-# Override vCores for serf9–serf13 → 4 cores
-for i in range(9, 14):
-    node_resources[f"clab-century-serf{i}"] = (node_resources[f"clab-century-serf{i}"][0], 4)
-
 # query thresholds
-THR_RTT, THR_RAM, THR_CORES = 100.0, 8, 8  # 100ms, ≥8GB, ≥8 cores
+THR_RTT, THR_RAM, THR_CORES = 100.0, 8, 8  # ≤100ms, ≥8GB, ≥8 cores
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Randomized node resources (RAM/vCores) with sensible ranges
+# Ensures a mix of nodes above and below thresholds, with optional reproducible seed.
+# ─────────────────────────────────────────────────────────────────────────────
+SEED = int(os.getenv("NODE_RESOURCE_SEED", "42"))
+random.seed(SEED)
+
+RAM_CHOICES   = [4, 8, 12, 16, 24, 32]          # GB
+CORE_CHOICES  = [4, 6, 8, 12, 16, 24, 32]       # vCores
+
+# weights must match the lengths above:
+RAM_WEIGHTS   = [1, 2, 3, 3, 2, 1]
+CORE_WEIGHTS  = [1, 2, 3, 3, 2, 2, 1]
+assert len(RAM_CHOICES)  == len(RAM_WEIGHTS)
+assert len(CORE_CHOICES) == len(CORE_WEIGHTS)
+
+def make_random_node_resources(num_nodes=26, thr_ram=THR_RAM, thr_cores=THR_CORES):
+    nodes = [f"clab-century-serf{i}" for i in range(1, num_nodes + 1)]
+    res = {}
+
+    # Initial random draw (slight bias toward mid/high options)
+    for n in nodes:
+        ram   = random.choices(RAM_CHOICES,  weights=RAM_WEIGHTS,  k=1)[0]
+        cores = random.choices(CORE_CHOICES, weights=CORE_WEIGHTS, k=1)[0]
+        res[n] = (ram, cores)
+
+    # Ensure at least ~25% nodes meet BOTH thresholds
+    hi_nodes = [n for n,(r,c) in res.items() if r >= thr_ram and c >= thr_cores]
+    need_hi  = max(1, num_nodes // 4)
+    if len(hi_nodes) < need_hi:
+        to_upgrade = [n for n in nodes if n not in hi_nodes][:need_hi - len(hi_nodes)]
+        for n in to_upgrade:
+            res[n] = (max(thr_ram, 16), max(thr_cores, 16))
+
+    # Ensure at least ~15% nodes fall below (so filters have negatives)
+    lo_nodes = [n for n,(r,c) in res.items() if r < thr_ram or c < thr_cores]
+    need_lo  = max(1, num_nodes // 6)
+    if len(lo_nodes) < need_lo:
+        candidates = [n for n in nodes if n not in lo_nodes]
+        for n in candidates[:need_lo - len(lo_nodes)]:
+            res[n] = (min(thr_ram - 1, 4), min(thr_cores - 1, 4))
+
+    return res
+
+# Build randomized resources for the cluster nodes
+node_resources = make_random_node_resources(num_nodes=26)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1) Copy & Parse the Serf Log
@@ -64,6 +103,9 @@ def parse_log():
                 cm = re.search(r"X:\s*([-\d.]+)\s*Y:\s*([-\d.]+)\s*Z:\s*([-\d.]+)", rest)
                 if cm:
                     x,y,z = map(float, cm.groups())
+                    if node not in node_resources:
+                        # If a node appears that's not in our randomized set, give it a default
+                        node_resources[node] = (THR_RAM, THR_CORES)
                     ram, cores = node_resources[node]
                     coords[node] = (x,y,z,ram,cores)
             else:  # RTT section
@@ -77,7 +119,7 @@ def parse_log():
     return coords, rtts
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2) Normalize & Compute 5‑D Hilbert Index
+# 2) Normalize & Compute 5-D Hilbert Index
 # ─────────────────────────────────────────────────────────────────────────────
 def normalize_and_index(coords, bits):
     arr  = np.array(list(coords.values()), dtype=float)  # shape = (n,5)
@@ -106,7 +148,7 @@ def normalize_and_index(coords, bits):
     return hilb_map, sorted_arr, hil_list, minv, maxv, scale
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3) Pure Hilbert Range Query (±1‑cell padding)
+# 3) Pure Hilbert Range Query (±1-cell padding)
 # ─────────────────────────────────────────────────────────────────────────────
 def decompose_hilbert_ranges(hc, min_pt, max_pt):
     N, size = hc.n, 2**hc.p
@@ -153,7 +195,7 @@ def pure_hilbert_range_query(
     minv, maxv, scale,
     thr_rtt, thr_ram, thr_cores
 ):
-    # Build real‑world box
+    # Build real-world box
     x0,y0,z0,_,_ = coords[CONTAINER_NAME]
     raw_min = (x0-thr_rtt, y0-thr_rtt, z0-thr_rtt, thr_ram,   thr_cores)
     raw_max = (x0+thr_rtt, y0+thr_rtt, z0+thr_rtt, maxv[3],   maxv[4])
@@ -221,7 +263,7 @@ def main():
         THR_RTT, THR_RAM, THR_CORES
     )
 
-    # Ground‑truth & error counts
+    # Ground-truth & error counts
     true_set = sorted(
         n for n in coords
         if rtts[n] <= THR_RTT
